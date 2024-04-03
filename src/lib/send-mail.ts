@@ -35,7 +35,11 @@ const getToken = async () => {
   }
 }
 
+<<<<<<< HEAD
 const sendMail = async (mail:any) => {
+=======
+const sendMail = async (mail) => {
+>>>>>>> c01a8ee (Initial commit)
   const api = 'https://api.sendpulse.com/smtp/emails';
   const {access_token} = await getToken();
   const email = 'hotline@therichard.space'
@@ -67,11 +71,19 @@ const sendMail = async (mail:any) => {
       success: true,
       message: await resp.json()
     }
+<<<<<<< HEAD
   } catch (err:unknown) {
       console.log(err)
       return {
         success: false,
         message: err
+=======
+  } catch (err) {
+      console.log(err.message)
+      return {
+        success: false,
+        message: err.message
+>>>>>>> c01a8ee (Initial commit)
       }
   }
 }
