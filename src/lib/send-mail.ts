@@ -35,11 +35,7 @@ const getToken = async () => {
   }
 }
 
-<<<<<<< HEAD
 const sendMail = async (mail:any) => {
-=======
-const sendMail = async (mail) => {
->>>>>>> c01a8ee (Initial commit)
   const api = 'https://api.sendpulse.com/smtp/emails';
   const {access_token} = await getToken();
   const email = 'hotline@therichard.space'

@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 // Packages
 import express, { Express, Request, Response, Application } from 'express';
 import dotenv from 'dotenv';
@@ -18,15 +17,10 @@ import { getUserInfo, setUserInfo, UserInfoUpdate, StatusResponse } from './rout
 import uploadImages, { upload } from './routes/upload-images';
 
 import { inputValidationConfig } from './lib/validatorContext';
-=======
-import express, { Express, Request, Response , Application } from 'express';
-import dotenv from 'dotenv';
->>>>>>> c01a8ee (Initial commit)
 
 //For env File 
 dotenv.config();
 
-<<<<<<< HEAD
 // Express server
 const app: Application = express();
 const port = process.env.PORT || 9000;
@@ -144,35 +138,6 @@ app.get('/x-forwarded-for', (request, response) => {
   response.send(request.headers['x-forwarded-for'])
 })
 
-=======
-const app: Application = express();
-const port = process.env.PORT || 9000;
-
-app.get('/', (req: Request, res: Response) => {
-  res.send('You reached the Richard Hotline API');
-});
-
-app.post('/add', (req: Request, res: Response) => {
-  res.send('Add message');
-});
-
-app.put('/confirm', (req: Request, res: Response) => {
-  res.send('Confirm receipt');
-});
-
-app.get('/printer-status', (req: Request, res: Response) => {
-  res.send('Update printer status');
-});
-
-app.put('/printer-status', (req: Request, res: Response) => {
-  res.send('Update printer status');
-});
-
-app.post('/upload-image', (req: Request, res: Response) => {
-  res.send('Update printer status');
-});
-
->>>>>>> c01a8ee (Initial commit)
 app.listen(port, () => {
   console.log(`Server is Fire at http://localhost:${port}`);
 });
