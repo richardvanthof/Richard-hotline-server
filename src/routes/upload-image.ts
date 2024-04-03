@@ -1,6 +1,16 @@
-import { upload } from '@testing-library/user-event/dist/upload';
 import {v2 as cloudinary} from 'cloudinary';
-          
+import multer from 'multer';
+import { userExists } from '../lib/firebase-server';
+import path from 'path';
+const DatauriParser = require('datauri/parser');
+
+
+
+export interface ImgURIs {
+  uris: string[],
+  errors?: unknown[]
+} 
+
 cloudinary.config({ 
   cloud_name: process.env.CLOUDINARY_CLOUD_NAME, 
   api_key: process.env.CLOUDINARY_API_KEY, 
@@ -8,29 +18,8 @@ cloudinary.config({
   secure: true 
 });
 
-const uploadImage = async (imagePath, user) => {
 
-  // Use the uploaded file's name as the asset's public ID and 
-  // allow overwriting the asset with new versions
-  const options = {
-    use_filename: true,
-    unique_filename: true,
-    overwrite: false,
-    folder: `hotline/${user}/`
-  };
-
-  try {
-    // Upload the image
-    const result = await cloudinary.uploader.upload(imagePath, options);
-    // console.log(result);
-    return result.url;
-  } catch (error) {
-    console.error(error);
-    return error
-  }
-};
-
-const isValid = data => {
+const isValid = (data:{http_code: number}) => {
   if(data.http_code) {
     throw data
   } else {
@@ -38,43 +27,50 @@ const isValid = data => {
   }
 }
 
-export default async function handler(req, res) {
-  if(req.method == "POST") {
-    try {
-      const {img, user} = req.body;
-      // console.log(Array.isArray(img))
-      // if(Array.isArray(img)) {
-      //   let urls = [];
-      //   for (asset in img) {
-      //     const resp = await uploadImage(asset, user)
-      //     isValid(await resp)
-      //     console.log('debug')
-      //     console.log(await resp)
-      //     urls.push(await resp)
-      //   }
-      //   return res.status(200).json({
-      //     success: true,
-      //     urls: urls
-      //   })
-      // } else {
-        const resp = await uploadImage(img, user)
-        if(isValid(resp)) {
-          return res.status(200).json({
-            success: true,
-            urls: resp
-          })
-        }
-        
-      // }
-      
-    } catch(err) {
-      return res.status(500).json({
-        success: false,
-        message: err
-      })
+// Multer configuration
+const storage = multer.memoryStorage();
+export const upload = multer({ storage: storage });
+
+cloudinary.config({ 
+  cloud_name: process.env.CLOUDINARY_CLOUD_NAME, 
+  api_key: process.env.CLOUDINARY_API_KEY, 
+  api_secret: process.env.CLOUDINARY_API_SECRET,
+  secure: true 
+});
+
+const datauriParser = new DatauriParser();
+
+// Upload assets to CDN and return links to resources
+//@ts-ignore
+const uploadImages = async (user:string, path?:string, files:any) => {
+  const options = {
+    use_filename: true,
+    unique_filename: true,
+    overwrite: false,
+    folder: `hotline/${user}/${path || 'message-assets'}`
+  };
+
+  try {
+    const uploadedImages = [];
+    if(!user || !userExists(user)) {
+      throw 'user is undefined.'
     }
-    
-  } else {
-    return res.status(405).json({status: 'failed', message: 'Method not allowed'})
+    for (const file of files as Express.Multer.File[]) {
+
+      const dataUri = datauriParser.format(
+        file.mimetype,
+        file.buffer
+      ).content;
+
+
+      const result = await cloudinary.uploader.upload(dataUri, options);
+      uploadedImages.push(result.secure_url);
+    }
+
+    return uploadedImages
+  } catch (error) {
+    throw error
   }
-}
+};
+
+export default uploadImages
