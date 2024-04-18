@@ -9,7 +9,7 @@ export interface ConfirmResponse {
 }
 
 export interface ConfirmRequest {
-  user: string, 
+  user?: string, 
   messageIds: string[]
 }
 

@@ -9,6 +9,7 @@ import * as openpgp from 'openpgp';
 import { rateLimit } from 'express-rate-limit' // Rate limiting
 import morgan from 'morgan'; // image upload library + manages accessing data from Express.
 import multer from 'multer'; // logging network requests.
+import cors from 'cors';
 
 // Route logic
 import add from './routes/add';
@@ -28,7 +29,7 @@ const port = process.env.PORT || 9000;
 // Rate limiting config
 const limiter = rateLimit({
 	windowMs: 15 * 60 * 1000, // 15 minutes
-	limit: 100, // Limit each IP to 100 requests per `window` (here, per 15 minutes).
+	limit: 50, // Limit each IP to 100 requests per `window` (here, per 15 minutes).
 	standardHeaders: 'draft-7', // draft-6: `RateLimit-*` headers; draft-7: combined `RateLimit` header
 	legacyHeaders: false, // Disable the `X-RateLimit-*` headers.
 	// store: ... , // Redis, Memcached, etc. See below.
@@ -40,6 +41,7 @@ app.get('/ip', (request, response) => response.send(request.ip))
 // Add middleware for getting request body
 app.use(express.json());
 app.use(express.urlencoded({extended: true}));
+app.use(cors())
 app.use(morgan('dev'));
 
 // Add middleware for rate limiting
@@ -56,9 +58,11 @@ app.get('/', (req: Request, res: Response):void => {
 });
 
 // Add message to database
-app.post('/add', async (req: Request, res: Response, next):Promise<void> => {
+app.post('/users/:userId/add', async (req: Request, res: Response, next):Promise<void> => {
   try {
-    const resp = await add(req.body);
+    const {userId} = req.params;
+    const resp = await add(userId, req.body);
+    
     if(!resp.success){
       throw resp
     }
@@ -69,13 +73,16 @@ app.post('/add', async (req: Request, res: Response, next):Promise<void> => {
   }
 });
 
-app.put('/confirm', async (req: Request, res: Response):Promise<void> => {
-  const {user, messageIds}:ConfirmRequest = req.body;
+// Confirm receipt
+app.put('/users/:userId/confirm', async (req: Request, res: Response):Promise<void> => {
+  const {messageIds}:ConfirmRequest = req.body;
+  const {userId} = req.params;
+
   const success: string[] = [] // List of messages where the status has been changed successfully
   try {
     const confirmations = await Promise.all(messageIds.map(async (message)=> {
       try {
-        const resp:ConfirmResponse = await confirm(user, message);
+        const resp:ConfirmResponse = await confirm(userId, message);
         if (await resp.completed) {
           return message
         } else {
@@ -97,10 +104,11 @@ app.put('/confirm', async (req: Request, res: Response):Promise<void> => {
 
 // Get user data
 // This includes the status of the printer
-app.get('/user', async (req: Request, res: Response):Promise<void> => {
+app.get('/users/:userId', async (req: Request, res: Response):Promise<void> => {
   try {
-    const {user, filter}:{user:string, filter?: string[]} = req.body;
-    const resp = await getUserInfo(user, filter);
+    const {filter}:{filter?: string[]} = req.body;
+    const {userId} = req.params;
+    const resp = await getUserInfo(userId, filter);
     res.send(resp)
   } catch(err) {
     res.status(500).send(err)
@@ -109,10 +117,11 @@ app.get('/user', async (req: Request, res: Response):Promise<void> => {
 
 // Update user data
 // This includes the status of the printer
-app.put('/user', async (req: Request, res: Response):Promise<void> => {
+app.put('/users/:userId', async (req: Request, res: Response):Promise<void> => {
   try {
-    const {user, data}:{user:string, data: UserInfoUpdate} = req.body;
-    const resp = await setUserInfo(user, data);
+    const {data}:{user:string, data: UserInfoUpdate} = req.body;
+    const {userId} = req.params;
+    const resp = await setUserInfo(userId, data);
     res.send(resp)
   } catch(err) {
     res.status(500).send(err)
@@ -120,12 +129,13 @@ app.put('/user', async (req: Request, res: Response):Promise<void> => {
 });
 
 // Upload assets to CDN and return links to resources
-app.post('/upload-images', upload.array('images', maxLength.images), async (req, res) => {
+app.post('/users/:userId/upload-images', upload.array('images', maxLength.images), async (req, res) => {
   
   try {
-    const {user, path} = req.body
+    const { path } = req.body
+    const { userId } = req.params
     console.log(req.body)
-    const uploadedImages = await uploadImages(user, path, req.files)
+    const uploadedImages = await uploadImages(userId, path, req.files)
 
     res.json({ images: uploadedImages });
   } catch (error) {

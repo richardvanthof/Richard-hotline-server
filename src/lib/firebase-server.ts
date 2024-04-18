@@ -6,12 +6,21 @@ import dotenv from 'dotenv';
 //For env File 
 dotenv.config();
 
-const serviceAccountKey = JSON.parse(
-  process.env.FIREBASE_ACCOUNT_KEY as string
-);
+
+
+const serviceAccountKey = () => {
+  if(process.env.FIREBASE_ACCOUNT_KEY ){
+    return JSON.parse(
+      process.env.FIREBASE_ACCOUNT_KEY as string
+    );
+  } else {
+    throw 'Firebase service account key not defined!'
+  }
+  
+}
 
 const app = initializeApp({
-    credential: cert(serviceAccountKey)
+    credential: cert(serviceAccountKey())
 });
 
 export const db = getFirestore(app);

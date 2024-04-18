@@ -15,29 +15,28 @@ interface Message {
   name: string,
   email: string,
   message: string,
-  images: string[],
-  user: string
+  images: string[]
 }
 
-export default async function add_message(messageObject: Message) {
+export default async function add_message(user:string, messageObject: Message) {
   // console.log(serviceAccount)
-  const { name, email, message, images, user }: Message = messageObject;
+  const { name, email, message, images}: Message = messageObject;
   const { maxLength } = inputValidationConfig;
 
   try {
-    [name, email, message].forEach((value: string) => {
-      if (isEmpty(value)) {
-        throw new Error(`${value} is empty`);
+    if(isEmpty(message) || isEmpty(name) || isEmpty(email)) {
+      throw 'Please fill in required all fields (name, email, message)'
+    } else {
+      if (name.length > maxLength.input || email.length > maxLength.input) {
+        throw `Name and email cannot be longer than ${maxLength.input} chars.`
       }
-      if (
-        (Object.keys(value).includes('email') && value.length > maxLength.input) ||
-        (Object.keys(value).includes('name') && value.length > maxLength.input)
-      ) {
-        throw new Error(`${Object.keys(value)} cannot be greater than ${maxLength.input} characters.`);
+      if ( message.length > maxLength.textArea) {
+        throw `Message cannot be longer than ${maxLength.textArea} chars.`
       }
-    });
+      if (!isEmail(email)) throw new Error('Please fill in a valid e-mail.');
+    }
 
-    if (!isEmail(email)) throw new Error('Please fill in a valid e-mail.');
+    
   } catch (error) {
     console.error({ error });
     return {
