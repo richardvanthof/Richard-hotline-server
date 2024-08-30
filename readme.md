@@ -1,8 +1,12 @@
 # Richard Hotline Server
+Backend API for the service.
+
 ### Dependencies
 - Vercel CLI (if you're gonna deploy on Vercel)
 - Firebase CLI
 - Node
+- Postman (for API debugging)
+
 ### Get started
 1. Install packages: `yarn`
 2. Install firebase CLI: `yarn global add firebase-tools`.
@@ -30,3 +34,6 @@ yarn db
 ```
 
 Happy hacking!
+
+### API-endpoints
+View all API endpoints by opening the file [api-calls.postman_collection.json]('api-calls.postman_collection.json') in Postman.

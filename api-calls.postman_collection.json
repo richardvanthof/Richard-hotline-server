@@ -1,0 +1,191 @@
+{
+	"info": {
+		"_postman_id": "8009f35c-4c3e-4925-a93a-0098d569e704",
+		"name": "Hotline api (dev)",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "Confirm receipt",
+			"request": {
+				"method": "PUT",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"user\": \"Jabe\",\n    \"messageIds\": [\"Jb7IWk1pSqTiw0Q6pIQp\"]\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "{{domain}}/confirm",
+					"host": [
+						"{{domain}}"
+					],
+					"path": [
+						"confirm"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Add Message",
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"name\": \"Richard\",\n    \"email\": \"richardvanthof@pm.me\",\n    \"message\": \"hello world\"\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "{{domain}}/users/Jabe/add",
+					"host": [
+						"{{domain}}"
+					],
+					"path": [
+						"users",
+						"Jabe",
+						"add"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Upload images",
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "formdata",
+					"formdata": [
+						{
+							"key": "images",
+							"contentType": "image/png",
+							"type": "file",
+							"src": [
+								"/Users/richard/Pictures/Screenshots/Screenshot 2024-03-25 at 00.41.12.png",
+								"/Users/richard/Pictures/Screenshots/Screenshot 2024-03-26 at 16.05.51.png",
+								"/Users/richard/Pictures/Screenshots/Screenshot 2024-03-29 at 15.35.18.png"
+							]
+						},
+						{
+							"key": "user",
+							"value": "Jabe",
+							"type": "text"
+						}
+					]
+				},
+				"url": {
+					"raw": "{{domain}}/upload-images",
+					"host": [
+						"{{domain}}"
+					],
+					"path": [
+						"upload-images"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Get user info",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "{{domain}}/user",
+					"host": [
+						"{{domain}}"
+					],
+					"path": [
+						"user"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Update user info",
+			"request": {
+				"method": "PUT",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"user\": \"Jabe\",\n    \"data\": {\n        \"printer_status\":\"out-of-paper\"\n    }\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "{{domain}}/user",
+					"host": [
+						"{{domain}}"
+					],
+					"path": [
+						"user"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Ping api root",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": null
+			},
+			"response": []
+		},
+		{
+			"name": "Add account",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": null
+			},
+			"response": []
+		}
+	],
+	"event": [
+		{
+			"listen": "prerequest",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					""
+				]
+			}
+		},
+		{
+			"listen": "test",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					""
+				]
+			}
+		}
+	],
+	"variable": [
+		{
+			"key": "domain",
+			"value": "api.hotline.therichard.space"
+		},
+		{
+			"key": "demo-images",
+			"value": "[\n      \"https://res.cloudinary.com/dgwcww6sy/image/upload/v1712066208/hotline/Jabe/message-assets/f2bwbpucgf7bcyf34cxu.png\",\n        \"https://res.cloudinary.com/dgwcww6sy/image/upload/v1712066210/hotline/Jabe/message-assets/hdizhv81n3mi1voqwsxb.png\",\n        \"https://res.cloudinary.com/dgwcww6sy/image/upload/v1712066211/hotline/Jabe/message-assets/nljcykbhqy1jsdwkaqmm.png\"]"
+		}
+	]
+}
