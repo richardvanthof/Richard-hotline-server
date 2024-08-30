@@ -16,6 +16,7 @@ import add from './routes/add';
 import confirm, {ConfirmRequest, ConfirmResponse} from './routes/confirm'
 import { getUserInfo, setUserInfo, UserInfoUpdate, StatusResponse } from './routes/userInfo';
 import uploadImages, { upload } from './routes/upload-images';
+import { addUser, userObj } from './routes/manageUsers';
 
 import { inputValidationConfig } from './lib/validatorContext';
 
@@ -23,7 +24,7 @@ import { inputValidationConfig } from './lib/validatorContext';
 dotenv.config();
 
 // Express server
-const app: Application = express();
+export const app: Application = express();
 const port = process.env.PORT || 9000;
 
 // Rate limiting config
@@ -48,6 +49,21 @@ app.use(morgan('dev'));
 app.use(limiter)
 
 const { maxLength } = inputValidationConfig
+
+
+// ACCOUNT MANAGEMENT
+
+// Add user
+app.post('/users/add', async (req: Request, res: Response, next):Promise<void> => {
+  try {
+    const newUser:userObj = req.body;
+    const resp = await addUser(newUser);
+    console.log(newUser, resp);
+    res.send(resp);
+  } catch (err) {
+    res.send(err)
+  }
+})
 
 
 // ROUTES:
@@ -102,6 +118,11 @@ app.put('/users/:userId/confirm', async (req: Request, res: Response):Promise<vo
   }
 });
 
+interface ErrObj {
+  code: number,
+  mssg: string
+}
+
 // Get user data
 // This includes the status of the printer
 app.get('/users/:userId', async (req: Request, res: Response):Promise<void> => {
@@ -110,8 +131,8 @@ app.get('/users/:userId', async (req: Request, res: Response):Promise<void> => {
     const {userId} = req.params;
     const resp = await getUserInfo(userId, filter);
     res.send(resp)
-  } catch(err) {
-    res.status(500).send(err)
+  } catch(err:ErrObj|any) {
+    res.status(err.code || 500).send(err.mssg || err)
   }
 });
 

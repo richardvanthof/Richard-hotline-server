@@ -21,7 +21,10 @@ export const getUserInfo = async (user: string, filter?: string[]):Promise<UserI
     const userRef = db.collection('users').doc(user);
     const doc = await userRef.get();
     if (!doc.exists) {
-      throw 'This user or data for this user was not found.';
+      throw {
+        mssg :"No data not found.",
+        code: 404
+      };
     } else {
       console.log('Document data:', doc.data());
       return doc.data()
