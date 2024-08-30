@@ -32,7 +32,7 @@
   },
   "scripts": {
     "build": "npx tsc",
-    "start": "node dist/index.js",
+    "start": "node dist/api/index.js",
     "dev": "nodemon src/index.ts",
     "vercel": "vercel dev",
     "db": "firebase emulators:start",
