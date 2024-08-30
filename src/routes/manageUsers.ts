@@ -6,7 +6,6 @@ export interface userObj {
   lastname: string,
   username: string
   email: string,
-
 }
 
 export const addUser = async (userData: userObj) => {
