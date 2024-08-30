@@ -36,4 +36,4 @@ yarn db
 Happy hacking!
 
 ### API-endpoints
-View all API endpoints by opening the file [api-calls.postman_collection.json]('api-calls.postman_collection.json') in Postman.
+View all API endpoints by opening the file [api-calls.postman_collection.json](api-calls.postman_collection.json) in Postman.
