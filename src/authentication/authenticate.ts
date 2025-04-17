@@ -1,5 +1,6 @@
 import query from '../db/db_connect';
 import bcrypt from 'bcrypt';
+import jwt from 'jsonwebtoken';
 
 type UserData = {
     firstName: string;
@@ -30,17 +31,21 @@ const createUser = async (data:UserData, role: 'user'|'admin' = 'user') => {
     }
 };
 
-const login = async (username: string, password: string):Promise<boolean> => {
+const login = async (username: string, password: string):Promise<{success: boolean, user: UserData}> => {
     try {
         const user = await query('SELECT * FROM users WHERE username = $1 or email = $1', [username]);
         if (user.rows.length === 0) {
             throw new Error('USER_NOT_FOUND');
         }
-        const isMatch = await bcrypt.compare(password, user.rows[0].password);
+        const userData = user.rows[0]
+        const isMatch = await bcrypt.compare(password, userData.password);
         if (!isMatch) {
             throw new Error('INVALID_PASSWORD');
         } else {
-            return true;
+            return {
+                success: true,
+                user: userData
+            };
         }
     } catch (err) {
         console.error('Error authenticating:', err);
@@ -49,4 +54,13 @@ const login = async (username: string, password: string):Promise<boolean> => {
 
 };
 
-export {createUser, login};
+const createJWT = (userData:UserData):string => {
+    const secret:string|undefined = process.env.ACCESS_SECRET_TOKEN;
+    if (!secret) {
+        throw new Error('JWT Secret Access token not found');
+    }
+    const token = jwt.sign({userData}, secret);
+    return token
+};
+
+export {createUser, login, createJWT};

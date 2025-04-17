@@ -12,7 +12,7 @@ import cors from 'cors';
 import initDB from './db/init';
 
 // Authentication
-import { createUser, login } from './authentication/authenticate';
+import { createUser, login, createJWT } from './authentication/authenticate';
 
 import { inputValidationConfig } from './lib/validatorContext';
 
@@ -47,9 +47,6 @@ app.use(morgan('dev'));
 // Add middleware for rate limiting
 app.use(limiter)
 
-const { maxLength } = inputValidationConfig
-
-
 // ACCOUNT MANAGEMENT
 app.post('/users', async (req: Request, res: Response):Promise<void> => {
   try {
@@ -64,14 +61,21 @@ app.post('/users', async (req: Request, res: Response):Promise<void> => {
 app.post('/login', async (req: Request, res: Response):Promise<void> => {
   try {
     const {username, password} = req.body;
-    const resp = await login(username, password);
-    res.status(200).send(resp);
+    const authenticate = await login(username, password);
+    if(authenticate.success) {
+      const token = await createJWT(authenticate.user);
+      res.status(200).send({
+        success: true,
+        token
+      });
+    }
+    
   } catch(err) {
     if (err instanceof Error) {
       if(err.message === 'USER_NOT_FOUND' || err.message === 'INVALID_PASSWORD') {
-        res.status(500).send('Your username or password is incorrect.');
+        res.status(401).send('NOT_AUTHORIZED');
       } else {
-        res.status(500).send('An unknown error occurred.');
+        res.status(500).send(err.message);
       }
     }
   }
