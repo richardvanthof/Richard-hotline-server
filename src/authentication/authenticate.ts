@@ -54,7 +54,7 @@ const login = async (username: string, password: string):Promise<{success: boole
 
 };
 
-const createJWT = (userData:UserData):string => {
+const generateAccessToken = (userData:UserData, experation?:string):string => {
     const secret:string|undefined = process.env.ACCESS_SECRET_TOKEN;
     if (!secret) {
         throw new Error('JWT Secret Access token not found');
@@ -63,4 +63,4 @@ const createJWT = (userData:UserData):string => {
     return token
 };
 
-export {createUser, login, createJWT};
+export {createUser, login, generateAccessToken};

@@ -12,7 +12,8 @@ import cors from 'cors';
 import initDB from './db/init';
 
 // Authentication
-import { createUser, login, createJWT } from './authentication/authenticate';
+import { createUser, login, generateAccessToken } from './authentication/authenticate';
+import { authenticateToken } from './authorization/authorization';
 
 import { inputValidationConfig } from './lib/validatorContext';
 
@@ -55,6 +56,10 @@ app.post('/users', async (req: Request, res: Response):Promise<void> => {
   } catch(err) {
     res.status(500).send(err)
   }
+});
+
+app.get('/users', authenticateToken, async (req: Request, res: Response):Promise<void> => {
+  res.send('success')
 })
 
 // Authenticate
@@ -63,10 +68,10 @@ app.post('/login', async (req: Request, res: Response):Promise<void> => {
     const {username, password} = req.body;
     const authenticate = await login(username, password);
     if(authenticate.success) {
-      const token = await createJWT(authenticate.user);
+      const token = await generateAccessToken(authenticate.user);
       res.status(200).send({
         success: true,
-        token
+        authToken: token
       });
     }
     
@@ -184,7 +189,7 @@ app.post('/login', async (req: Request, res: Response):Promise<void> => {
 
 
 app.get('/', (req: Request, res: Response):void => {
-  res.send('You reached the Richard Hotline API');
+  res.send('You reached the Makker Hotline API');
 });
 
 app.get('/x-forwarded-for', (request, response) => {
