@@ -1,6 +1,7 @@
 import query from '../db/db_connect';
 import bcrypt from 'bcrypt';
 import jwt, { JwtPayload } from 'jsonwebtoken';
+import crypto from 'crypto';
 
 type UserData = {
     firstName: string;
@@ -62,4 +63,23 @@ const generateToken = (userData:string | JwtPayload, secret: string, expration?:
     return jwt.sign({userData}, secret, expration ? {expiresIn: expration} : {});
 };
 
-export {createUser, login, generateToken};
+const generateResetToken = async (email: string): Promise<string> => {
+    try {
+        const user = await query('SELECT * FROM users WHERE email = $1', [email]);
+        if (user.rows.length === 0) {
+            throw new Error('USER_NOT_FOUND');
+        }
+
+        const resetToken = crypto.randomBytes(32).toString('hex');
+        const resetTokenExpiry = new Date(Date.now() + 3600000); // 1 hour from now
+
+        await query('UPDATE users SET reset_token = $1, reset_token_expiry = $2 WHERE email = $3', [resetToken, resetTokenExpiry, email]);
+
+        return resetToken;
+    } catch (err) {
+        console.error('Error generating reset token:', err);
+        throw err;
+    }
+};
+
+export {createUser, login, generateToken, generateResetToken};

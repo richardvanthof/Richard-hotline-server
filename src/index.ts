@@ -14,7 +14,7 @@ import cors from 'cors';
 import initDB from './db/init';
 
 // Authentication
-import { createUser, login, generateToken } from './authentication/authenticate';
+import { createUser, login, generateToken, generateResetToken } from './authentication/authenticate';
 import { authenticateToken } from './authorization/authorization';
 
 import { inputValidationConfig } from './lib/validatorContext';
@@ -183,6 +183,28 @@ app.delete('/logout-all', authenticateToken, async (req: Request, res: Response)
     res.status(500).send(err)
   }
 });
+
+app.post('/forgot-password', async (req: Request, res: Response):Promise<void> => {
+  try {
+    const {email} = req.body;
+    if(!email) { res.status(300).send('EMAIL_UNDEFINED')}; 
+    const resetToken = await generateResetToken(email);
+    console.log({resetToken})
+    res.status(200).send("RESET_TOKEN_GENERATED");
+  } catch(err) {
+    if (err instanceof Error) {
+      if(err.message === 'USER_NOT_FOUND') {
+        res.status(404).send(err.message);
+      } else {
+        res.status(500).send(err.message);
+      }
+      res.status(500).send(err.message);
+    }
+    res.status(500).send(err)
+  }
+});
+
+
 
 // // ROUTES:
 
