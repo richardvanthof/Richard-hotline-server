@@ -1,15 +1,14 @@
 import { Pool } from 'pg';
 
-export const pool = new Pool({
-    user: process.env.POSTGRES_USER || ,
-    host: process.env.POSTGRES_HOST,
-    database: process.env.POSTGRES_DB,
-    password: process.env.POSTGRES_PASSWORD,
-    port: parseInt(process.env.POSTGRES_PORT || '5432'),
-});
-
 const query = async (text: string, params?: any[]) => {
-   
+    console.log(process.env.POSTGRES_USER); //
+    const pool = new Pool({
+        user: process.env.POSTGRES_USER, // Provide a default value
+        host: process.env.POSTGRES_HOST, // Default to localhost if undefined
+        database: process.env.POSTGRES_DB, // Provide a default database name
+        password: process.env.POSTGRES_PASSWORD, // Provide a default password
+        port: 5432 // Default to port 5432
+    });
     const client = await pool.connect();
     try {
         const result = await client.query(text, params);
