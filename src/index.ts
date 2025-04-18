@@ -2,6 +2,8 @@
 import express, { Express, Request, Response, Application } from 'express';
 import dotenv from 'dotenv';
 const DatauriParser = require('datauri/parser');
+import jwt, { Secret } from 'jsonwebtoken';
+import query from './db/db_connect'; // Database connection
 
 // Middleware
 import { rateLimit } from 'express-rate-limit' // Rate limiting
@@ -12,10 +14,12 @@ import cors from 'cors';
 import initDB from './db/init';
 
 // Authentication
-import { createUser, login, generateAccessToken } from './authentication/authenticate';
+import { createUser, login, generateToken } from './authentication/authenticate';
 import { authenticateToken } from './authorization/authorization';
 
 import { inputValidationConfig } from './lib/validatorContext';
+
+
 
 //For env File 
 dotenv.config();
@@ -62,17 +66,42 @@ app.get('/users', authenticateToken, async (req: Request, res: Response):Promise
   res.send('success')
 })
 
+const getRefreshTokens = async (userId: string|number):Promise<string[]> => {
+  try {
+    console.log(userId);
+    const tokens = await query('SELECT refresh_tokens FROM users WHERE id = $1', [userId]);
+    return tokens.rows[0].refresh_tokens || [];
+  } catch (err) {
+    console.error('Error getting refresh tokens:', err);
+    throw err;
+  }
+};
+
 // Authenticate
 app.post('/login', async (req: Request, res: Response):Promise<void> => {
   try {
     const {username, password} = req.body;
-    const authenticate = await login(username, password);
-    if(authenticate.success) {
-      const token = await generateAccessToken(authenticate.user);
-      res.status(200).send({
-        success: true,
-        authToken: token
-      });
+    const authenticated = await login(username, password);
+    if(authenticated.success) {
+      if(!process.env.ACCESS_TOKEN_SECRET) {res.status(500).send('Access token secret not found')};
+      if(!process.env.REFRESH_TOKEN_SECRET) {res.status(500).send('Refresh token secret not found')};
+      const {id, username} = authenticated.user;
+      if(id) {
+        const userData = {id, username};
+        const refreshToken = await generateToken(userData, process.env.REFRESH_TOKEN_SECRET || '');
+        let refreshTokens = await getRefreshTokens(id);
+        refreshTokens.push(refreshToken);
+        await query('UPDATE users SET refresh_tokens = $1 WHERE id = $2', [refreshTokens, id]);
+        const accessToken = await generateToken(userData, process.env.ACCESS_TOKEN_SECRET || '', process.env.ACCESS_TOKEN_EXPIRATION);
+        res.status(200).send({
+          success: true,
+          accessToken,
+          accessTokenExpiration: process.env.ACCESS_TOKEN_EXPIRATION,
+          refreshToken
+        });
+      } else {
+        throw new Error('USER_ID_UNDEFINED');
+      }
     }
     
   } catch(err) {
@@ -86,6 +115,74 @@ app.post('/login', async (req: Request, res: Response):Promise<void> => {
   }
 });
 
+app.post('/refresh', async (req: Request, res: Response):Promise<void> => {
+  try {
+    const authHeaders = req.headers['authorization'] as string;
+    const refreshToken:string = authHeaders && authHeaders.split(' ')[1];
+    if(!refreshToken) {
+      res.status(401).send('REFRESH_TOKEN_NOT_FOUND');
+    } else if(!process.env.REFRESH_TOKEN_SECRET) {
+      res.status(500).send('Refresh token secret not found');
+    } else {
+      const user = await jwt.verify(refreshToken, process.env.REFRESH_TOKEN_SECRET);
+      const accessToken = await generateToken(user, process.env.ACCESS_TOKEN_SECRET || '', process.env.ACCESS_TOKEN_EXPIRATION);
+      res.status(200).send({
+        success: true,
+        accessToken,
+        accessTokenExpiration: process.env.ACCESS_TOKEN_EXPIRATION,
+      });
+    }
+  } catch(err) {
+    if (err instanceof Error) {
+      if(err.message === 'jwt expired' || err.message === 'invalid token') {
+        res.status(403).send('NOT_AUTHORIZED');
+      } else {
+        res.status(500).send(err.message);
+      }
+    }
+  }
+}); 
+
+app.delete('/logout', authenticateToken, async (req: Request, res: Response):Promise<void> => {
+  try {
+    const {id} = req.user.userData;
+    const {refreshToken} = req.body;
+    if(id && refreshToken) {
+      let refreshTokens = await getRefreshTokens(id);
+      if(refreshTokens.some((token:string) => token === refreshToken)) {
+        refreshTokens = refreshTokens.filter((token:string) => token !== refreshToken);
+        await query('UPDATE users SET refresh_tokens = $1 WHERE id = $2', [refreshTokens, id]);
+        res.status(403).send('LOGGED_OUT');
+      } else {
+        res.status(403).send('NOT_AUTHORIZED');
+      }
+    } 
+  } catch(err) {
+    if (err instanceof Error) {
+      if(err.message === 'jwt expired' || err.message === 'invalid token') {
+        res.status(403).send('SESSION_EXPIRED');
+      } else {
+        res.status(500).send(err.message);
+      }
+    }
+    res.status(500).send(err)
+  }
+});
+
+app.delete('/logout-all', authenticateToken, async (req: Request, res: Response):Promise<void> => {
+  try {
+    const {id} = req.user.userData;
+    if(id) {
+      await query('UPDATE users SET refresh_tokens = $1 WHERE id = $2', [[], id]);
+      res.status(403).send('LOGGED_OUT_ALL');
+    } 
+  } catch(err) {
+    if (err instanceof Error) {
+      res.status(500).send(err.message);
+    }
+    res.status(500).send(err)
+  }
+});
 
 // // ROUTES:
 

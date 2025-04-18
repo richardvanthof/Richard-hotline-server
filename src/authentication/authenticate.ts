@@ -1,13 +1,14 @@
 import query from '../db/db_connect';
 import bcrypt from 'bcrypt';
-import jwt from 'jsonwebtoken';
+import jwt, { JwtPayload } from 'jsonwebtoken';
 
 type UserData = {
     firstName: string;
     lastName: string,
     email: string,
     username: string,
-    password: string
+    password: string,
+    id?: number | string
 }
 
 const createUser = async (data:UserData, role: 'user'|'admin' = 'user') => {
@@ -54,13 +55,11 @@ const login = async (username: string, password: string):Promise<{success: boole
 
 };
 
-const generateAccessToken = (userData:UserData, experation?:string):string => {
-    const secret:string|undefined = process.env.ACCESS_SECRET_TOKEN;
-    if (!secret) {
-        throw new Error('JWT Secret Access token not found');
-    }
-    const token = jwt.sign({userData}, secret);
-    return token
+/** Generates access or refresh token */
+const generateToken = (userData:string | JwtPayload, secret: string, expration?:any):string => {
+    if (!secret) throw new Error('Refresh or Access token secret not found');
+    console.log(userData)
+    return jwt.sign({userData}, secret, expration ? {expiresIn: expration} : {});
 };
 
-export {createUser, login, generateAccessToken};
+export {createUser, login, generateToken};

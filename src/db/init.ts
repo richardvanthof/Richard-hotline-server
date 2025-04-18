@@ -15,7 +15,8 @@ const createUsersTable = async () => {
             updated_at TIMESTAMP DEFAULT NOW(),
             last_login TIMESTAMP,
             reset_token TEXT,
-            reset_token_expiry TIMESTAMP
+            reset_token_expiry TIMESTAMP,
+            refresh_tokens TEXT[]
         );
     `;
 
