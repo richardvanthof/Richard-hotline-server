@@ -82,4 +82,23 @@ const generateResetToken = async (email: string): Promise<string> => {
     }
 };
 
-export {createUser, login, generateToken, generateResetToken};
+const resetPassword = async (token: string, newPassword: string): Promise<void> => {
+    try {
+        const user = await query('SELECT * FROM users WHERE reset_token = $1 AND reset_token_expiry > NOW()', [token]);
+        if (user.rows.length === 0) {
+            throw new Error('INVALID_OR_EXPIRED_TOKEN');
+        }
+
+        const hashedPassword = await bcrypt.hash(newPassword, 10);
+        await query('UPDATE users SET password = $1, reset_token = NULL, reset_token_expiry = NULL WHERE id = $2', [hashedPassword, user.rows[0].id]);
+        // Optionally, clear the reset token immediately after password reset
+        await query('UPDATE users SET reset_token = NULL, reset_token_expiry = NULL WHERE id = $1', [user.rows[0].id]);
+        
+        console.log('Password reset successfully.');
+    } catch (err) {
+        console.error('Error resetting password:', err);
+        throw err;
+    }
+};
+
+export {createUser, login, generateToken, generateResetToken, resetPassword};

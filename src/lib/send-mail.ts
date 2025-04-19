@@ -1,82 +1,44 @@
-import FormData from 'form-data';
-import Mailgun from 'mailgun.js';
+import nodemailer from 'nodemailer';
+import fs from 'fs';
+import dotenv from 'dotenv';
+dotenv.config();
 
-interface ResponseMssg {
-  message: string,
-  error_code: number
+const server = {
+  host: process.env.SMTP_HOST || '',
+  port: process.env.SMTP_PORT ? parseInt(process.env.SMTP_PORT, 10) : 0,
+  secure: false,
+  auth: {
+    user: process.env.SMTP_USER || '',
+    pass: process.env.SMTP_PASS || '',
+  },
+};
+
+
+
+const defaults = {
+  from: process.env.MAIL_FROM
 }
+const transporter = nodemailer.createTransport(server, defaults);
 
-const getToken = async () => {
+const sendMail = async (options:{to: string, subject: string, html?:string, text?:string}) => {
+  const {to, subject, html, text} = options;
+  // send mail with defined transport object
   try{
-  const api = "https://api.sendpulse.com/oauth/access_token"
-  const params = {
-    grant_type: "client_credentials",
-    client_id: process.env.SENDPULSE_ID,
-    client_secret: process.env.SENDPULSE_SECRET
- }
-  const resp = await fetch(api, {
-    method: "POST",
-    headers: {
-      'Content-type': 'application/json'
-    },
-    body: JSON.stringify(params)
-  })
-  if(resp.status != 200) {
-    const {statusText, body} = resp
-    console.log(statusText, body)
-    throw new Error(statusText)
-  }
-  return resp.json()
-  } catch(err) {
-    return {
-      success: false,
-      error: err
-    }
-  }
-}
-
-const sendMail = async (mail:any) => {
-  const api = 'https://api.sendpulse.com/smtp/emails';
-  const {access_token} = await getToken();
-  const email = 'hotline@therichard.space'
-  try {
-    const data = mail
-
-    const resp = await fetch(api, {
-      method: "POST",
-      headers: {
-        'Content-type': 'application/json',
-        'Authorization': `Bearer ${access_token}`
-      },
-      body: JSON.stringify(data)
+    const from = `${process.env.MAIL_FROM_NAME} <${process.env.MAIL_FROM_EMAIL}>`;
+    const info = await transporter.sendMail({
+      from, // sender address
+      to, // list of receivers
+      subject, // Subject line
+      html,
+      text
     });
-    
-
-
-    if(await resp.status != 200) {
-      console.log('SERVER RESPONSE:')
-      const {message, error_code}:ResponseMssg = await resp.json()
-      console.log(await resp.json())
-      return {
-        success: false,
-        message: `${message} (error ${error_code}`
-      }
-    }
-
-    return {
-      success: true,
-      message: await resp.json()
-    }
-  } catch (err:unknown) {
-      console.log(err)
-      return {
-        success: false,
-        message: err
-      }
+  
+    console.log("Message sent: %s", info.messageId);
+    return info;
+  } catch (error) {
+    console.error("Error sending email:", error);
+    throw error;
   }
 }
 
-export default sendMail
-
-
-
+export default sendMail;

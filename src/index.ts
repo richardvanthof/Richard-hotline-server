@@ -14,11 +14,11 @@ import cors from 'cors';
 import initDB from './db/init';
 
 // Authentication
-import { createUser, login, generateToken, generateResetToken } from './authentication/authenticate';
+import { createUser, login, generateToken, generateResetToken, resetPassword } from './authentication/authenticate';
 import { authenticateToken } from './authorization/authorization';
 
 import { inputValidationConfig } from './lib/validatorContext';
-
+import sendMail from './lib/send-mail';
 
 
 //For env File 
@@ -190,11 +190,24 @@ app.post('/forgot-password', async (req: Request, res: Response):Promise<void> =
     if(!email) { res.status(300).send('EMAIL_UNDEFINED')}; 
     const resetToken = await generateResetToken(email);
     console.log({resetToken})
-    res.status(200).send("RESET_TOKEN_GENERATED");
+    const subject = 'Password Reset';
+    const message = `
+      <h1>Reset your password</h1>
+      <p>Click the link to reset your password:</p>
+      <a href="http://localhost:9000/reset-password?token=${resetToken}">Reset Password</a>
+    `
+    const sent = await sendMail({to: email, subject, html: message});
+    if(sent) {
+      res.status(200).send("RESET_TOKEN_GENERATED");
+    } else {
+      res.status(500).send("PSSWD_EMAIL_SERVICE_ERROR");
+    }
   } catch(err) {
     if (err instanceof Error) {
       if(err.message === 'USER_NOT_FOUND') {
         res.status(404).send(err.message);
+      } else if (err.message.includes('invalid username or password')) {
+        res.status(500).send('INVALID_INTERNAL_SMTP_AUTH')
       } else {
         res.status(500).send(err.message);
       }
@@ -204,7 +217,22 @@ app.post('/forgot-password', async (req: Request, res: Response):Promise<void> =
   }
 });
 
-
+app.post('/reset-password', async (req: Request, res: Response): Promise<void> => {
+  try {
+      const { token, newPassword } = req.body;
+      await resetPassword(token, newPassword);
+      res.status(200).send('Password reset successfully.');
+  } catch (err) {
+    if (err instanceof Error) {
+      if(err.message === 'INVALID_OR_EXPIRED_TOKEN') {
+         res.status(403).send(err.message);
+      } else {
+        res.status(500).send(err.message);
+      }
+    }
+    res.status(500).send(err);
+  }
+});
 
 // // ROUTES:
 
