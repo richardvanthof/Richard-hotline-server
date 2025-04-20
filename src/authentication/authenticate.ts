@@ -63,6 +63,17 @@ const generateToken = (userData:string | JwtPayload, secret: string, expration?:
     return jwt.sign({userData}, secret, expration ? {expiresIn: expration} : {});
 };
 
+const getRefreshTokens = async (userId: string|number):Promise<string[]> => {
+    try {
+        console.log(userId);
+        const tokens = await query('SELECT refresh_tokens FROM users WHERE id = $1', [userId]);
+        return tokens.rows[0].refresh_tokens || [];
+    } catch (err) {
+        console.error('Error getting refresh tokens:', err);
+        throw err;
+    }
+};
+
 const generateResetToken = async (email: string): Promise<string> => {
     try {
         const user = await query('SELECT * FROM users WHERE email = $1', [email]);
@@ -101,4 +112,17 @@ const resetPassword = async (token: string, newPassword: string): Promise<void> 
     }
 };
 
-export {createUser, login, generateToken, generateResetToken, resetPassword};
+const deleteUser = async (userId: number | string): Promise<void> => {
+    try {
+        const res = await query('DELETE FROM users WHERE id = $1 RETURNING *', [userId]);
+        if (res.rows.length === 0) {
+            throw new Error('USER_NOT_FOUND');
+        }
+        console.log('User deleted successfully:', res.rows[0]);
+    } catch (err) {
+        console.error('Error deleting user:', err);
+        throw err;
+    }
+};
+
+export {createUser, deleteUser, login, generateToken, generateResetToken, resetPassword, getRefreshTokens};

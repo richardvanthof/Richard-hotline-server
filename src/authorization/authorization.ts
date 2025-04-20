@@ -21,7 +21,7 @@ const authenticateToken:RequestHandler= (req, res, next) => {
         else {
             return jwt.verify(token, secret, (err, user) => {
                 if (err) {
-                    return res.status(403).send('FORBIDDEN');
+                    return res.status(403).send('ACCESS_DENIED');
                 }
                 req.user = user;
                 next();
