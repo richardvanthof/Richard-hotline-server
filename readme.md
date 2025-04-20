@@ -9,20 +9,32 @@ Backend API for the service.
 
 ### Get started
 1. Install packages: `yarn`
-2. Install firebase CLI: `yarn global add firebase-tools`.
-3. Create `.env` file with all the service credentials.
+2. Create `.env` file with all the service credentials.
 ```js
-# Transactional mails
-SENDPULSE_ID=
-SENDPULSE_SECRET=
+# GENERAL
+DOMAIN=hotline.example.com
 
-# Cloudinary
-CLOUDINARY_CLOUD_NAME=
-CLOUDINARY_API_KEY=
-CLOUDINARY_API_SECRET=
+# DB
+POSTGRES_USER=hotline-service-user
+POSTGRES_PASSWORD=******
+POSTGRES_DB=hotline-server-db
+POSTGRES_HOST=db.example.com
+POSTGRES_PORT=5432
 
-# Firebase admin server SDK
-FIREBASE_ACCOUNT_KEY= // Paste contents serviceAccountKey.json file here as one line.
+# JWT
+REFRESH_TOKEN_SECRET=***generate_random_long_string_here***
+ACCESS_TOKEN_SECRET=***generate_random_long_String_here***
+ACCESS_TOKEN_EXPIRATION=15m
+
+# SMTP
+SMTP_HOST=smtp@example.com
+SMTP_PORT=587
+SMTP_USER=******
+SMTP_PASS=********
+
+# EMAIL
+MAIL_FROM_EMAIL='no-reply@example.com'
+MAIL_FROM_NAME='Hotline Service'
 ```
 
 4. Start dev server with one of the following options:
