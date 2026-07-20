@@ -1,7 +1,8 @@
 import query from './db_connect';
 
 const initDB = async () => {
-    const sql = `
+    const statements = [
+        `
         CREATE TABLE IF NOT EXISTS users (
             id SERIAL PRIMARY KEY,
             first_name VARCHAR(50) NOT NULL,
@@ -18,18 +19,20 @@ const initDB = async () => {
             reset_token_expiry TIMESTAMP,
             refresh_tokens TEXT[]
         );
-
+        `,
+        `
         CREATE TABLE IF NOT EXISTS posts (
             post_id SERIAL UNIQUE PRIMARY KEY,
             owner_id INTEGER REFERENCES users(id),
-            content VARCHAR(500) NOT NULL,
+            content JSONB NOT NULL,
             email VARCHAR(75) NOT NULL,
             name VARCHAR(75) NOT NULL,
             created_at TIMESTAMP DEFAULT NOW(),
             updated_at TIMESTAMP DEFAULT NOW(),
             printed_at TIMESTAMP
         );
-
+        `,
+        `
         CREATE TABLE IF NOT EXISTS endpoints (
             endpoint_id SERIAL UNIQUE PRIMARY KEY,
             uuid VARCHAR(75) UNIQUE NOT NULL,
@@ -39,19 +42,23 @@ const initDB = async () => {
             created_at TIMESTAMP DEFAULT NOW(),
             updated_at TIMESTAMP
         );
-
+        `,
+        `
         CREATE INDEX IF NOT EXISTS idx_owner_id_printed_at ON posts (owner_id, printed_at);
-    `;
-  
-    try{
-        await query(sql);
-        console.log('Database tables created')
-    } catch(err) {
+        `
+    ];
+
+    try {
+        for (const statement of statements) {
+            await query(statement);
+        }
+        console.log('Database tables created');
+    } catch (err) {
         if (err instanceof Error) {
             console.error('Error creating tables:', err.message);
-            throw err.message
-        }  else {
-            throw err
+            throw err.message;
+        } else {
+            throw err;
         }
     }
 };

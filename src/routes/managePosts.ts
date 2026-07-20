@@ -99,12 +99,13 @@ postRoutes.get('/message', authenticateToken, async (req: Request, res: Response
 postRoutes.post('/message', async (req: Request, res: Response) =>{
     try{
         const {name, email, ownerId, content} = req.body;
+        console.log(content)
         const command = `
             INSERT INTO posts (name, email, content, owner_id)
             VALUES ($1, $2, $3, $4)
             RETURNING *;
         `;
-        const resp = await query(command, [name, email, content, ownerId])
+        const resp = await query(command, [name, email, JSON.stringify(content), ownerId])
         console.log(resp.rows[0]);
         res.status(200).send({
             code: 'POST_CREATED',

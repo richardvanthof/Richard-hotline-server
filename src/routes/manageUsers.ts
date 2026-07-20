@@ -11,6 +11,29 @@ import jwt from 'jsonwebtoken';
 
 const userRoutes = Router()
 
+const getAccessTokenExpirationTimestamp = (expiration?: string): number | undefined => {
+    if (!expiration) {
+        return undefined;
+    }
+
+    const match = expiration.trim().match(/^(\d+)(ms|s|m|h|d)?$/i);
+    if (!match) {
+        return undefined;
+    }
+
+    const amount = Number(match[1]);
+    const unit = (match[2] ?? 's').toLowerCase();
+    const multipliers: Record<string, number> = {
+        ms: 1,
+        s: 1000,
+        m: 60 * 1000,
+        h: 60 * 60 * 1000,
+        d: 24 * 60 * 60 * 1000,
+    };
+
+    return Date.now() + amount * multipliers[unit];
+};
+
 // ACCOUNT MANAGEMENT
 userRoutes.post('/users', async (req: Request, res: Response):Promise<void> => {
     try {
@@ -45,7 +68,8 @@ userRoutes.post('/login', async (req: Request, res: Response):Promise<void> => {
             res.status(200).send({
                 success: true,
                 accessToken,
-                accessTokenExpiration: process.env.ACCESS_TOKEN_EXPIRATION,
+                accessTokenExpiration: getAccessTokenExpirationTimestamp(process.env.ACCESS_TOKEN_EXPIRATION),
+                issuedAt: Date.now(),
                 refreshToken
             });
         } else {
@@ -85,7 +109,8 @@ try {
         res.status(200).send({
             success: true,
             accessToken,
-            accessTokenExpiration: process.env.ACCESS_TOKEN_EXPIRATION,
+            accessTokenExpiration: getAccessTokenExpirationTimestamp(process.env.ACCESS_TOKEN_EXPIRATION),
+            issuedAt: Date.now(),
         });
     };
 } catch(err) {
