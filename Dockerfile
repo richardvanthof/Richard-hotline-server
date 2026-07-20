@@ -1,5 +1,5 @@
 # Use Node.js as the base image
-FROM node:18
+FROM node:20
 
 # Set the working directory
 WORKDIR /usr/src/app
@@ -20,4 +20,4 @@ RUN npm run build
 EXPOSE 9000
 
 # Start the application
-CMD ["npm ", "run", "dev"]
+CMD ["npm", "run", "dev"]
