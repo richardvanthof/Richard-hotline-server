@@ -9,7 +9,8 @@ type UserData = {
     email: string,
     username: string,
     password: string,
-    id?: number | string
+    id?: number | string,
+    role?: string
 }
 
 const createUser = async (data:UserData, role: 'user'|'admin' = 'user') => {
@@ -33,34 +34,40 @@ const createUser = async (data:UserData, role: 'user'|'admin' = 'user') => {
     }
 };
 
-const login = async (username: string, password: string):Promise<{success: boolean, user: UserData}> => {
+const login = async (username: string, password: string): Promise<{ success: boolean; user: UserData }> => {
     try {
-        const user = await query('SELECT * FROM users WHERE username = $1 or email = $1', [username]);
+        const user = await query('SELECT * FROM users WHERE username = $1 OR email = $1', [username]);
         if (user.rows.length === 0) {
             throw new Error('USER_NOT_FOUND');
         }
-        const userData = user.rows[0]
+
+        const userData = user.rows[0];
         const isMatch = await bcrypt.compare(password, userData.password);
         if (!isMatch) {
             throw new Error('INVALID_PASSWORD');
-        } else {
-            return {
-                success: true,
-                user: userData
-            };
         }
+
+        // Update last_login field
+        await query(
+            `UPDATE users SET last_login = NOW() WHERE id = $1 RETURNING *`,
+            [userData.id]
+        );
+
+        return {
+            success: true,
+            user: userData,
+        };
     } catch (err) {
         console.error('Error authenticating:', err);
         throw err;
     }
-
 };
 
 /** Generates access or refresh token */
-const generateToken = (userData:string | JwtPayload, secret: string, expration?:any):string => {
+const generateToken = (data:string | JwtPayload, secret: string, expration?:any):string => {
     if (!secret) throw new Error('Refresh or Access token secret not found');
-    console.log(userData)
-    return jwt.sign({userData}, secret, expration ? {expiresIn: expration} : {});
+    console.log({data})
+    return jwt.sign(data, secret, expration ? {expiresIn: expration} : {});
 };
 
 const getRefreshTokens = async (userId: string|number):Promise<string[]> => {
@@ -84,7 +91,7 @@ const generateResetToken = async (email: string): Promise<string> => {
         const resetToken = crypto.randomBytes(32).toString('hex');
         const resetTokenExpiry = new Date(Date.now() + 3600000); // 1 hour from now
 
-        await query('UPDATE users SET reset_token = $1, reset_token_expiry = $2 WHERE email = $3', [resetToken, resetTokenExpiry, email]);
+        await query('UPDATE users SET reset_token = $1, updated_at = NOW(), reset_token_expiry = $2 WHERE email = $3', [resetToken, resetTokenExpiry, email]);
 
         return resetToken;
     } catch (err) {
@@ -101,9 +108,7 @@ const resetPassword = async (token: string, newPassword: string): Promise<void> 
         }
 
         const hashedPassword = await bcrypt.hash(newPassword, 10);
-        await query('UPDATE users SET password = $1, reset_token = NULL, reset_token_expiry = NULL WHERE id = $2', [hashedPassword, user.rows[0].id]);
-        // Optionally, clear the reset token immediately after password reset
-        await query('UPDATE users SET reset_token = NULL, reset_token_expiry = NULL WHERE id = $1', [user.rows[0].id]);
+        await query('UPDATE users SET password = $1, reset_token = NULL, updated_at = NOW(), reset_token_expiry = NULL WHERE id = $2', [hashedPassword, user.rows[0].id]);
         
         console.log('Password reset successfully.');
     } catch (err) {

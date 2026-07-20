@@ -21,7 +21,10 @@ const authenticateToken:RequestHandler= (req, res, next) => {
         else {
             return jwt.verify(token, secret, (err, user) => {
                 if (err) {
-                    return res.status(403).send('ACCESS_DENIED');
+                    return res.status(403).send({
+                        code: 'INVALID_CREDENTIALS',
+                        message: 'Your credentials are invalid.'
+                    });
                 }
                 req.user = user;
                 next();

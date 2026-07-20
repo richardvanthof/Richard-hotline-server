@@ -1,5 +1,4 @@
-import {app} from '../index';
-import express, { Express, Request, Response, Application } from 'express';
+import { Request, Response, Router } from 'express';
 import query from '../db/db_connect';
 
 // Authentication
@@ -8,9 +7,12 @@ import { authenticateToken } from '../authorization/authorization';
 
 import { inputValidationConfig } from '../lib/validatorContext';
 import sendMail from '../lib/send-mail';
+import jwt from 'jsonwebtoken';
+
+const userRoutes = Router()
 
 // ACCOUNT MANAGEMENT
-app.post('/users', async (req: Request, res: Response):Promise<void> => {
+userRoutes.post('/users', async (req: Request, res: Response):Promise<void> => {
     try {
         const resp = await createUser(req.body);
         res.status(201).send(resp);
@@ -19,31 +21,32 @@ app.post('/users', async (req: Request, res: Response):Promise<void> => {
     }
     });
 
-    app.get('/users', authenticateToken, async (req: Request, res: Response):Promise<void> => {
+    userRoutes.get('/users', authenticateToken, async (req: Request, res: Response):Promise<void> => {
     res.send('success')
 });
 
 // Authenticate
-app.post('/login', async (req: Request, res: Response):Promise<void> => {
+
+userRoutes.post('/login', async (req: Request, res: Response):Promise<void> => {
     try {
         const {username, password} = req.body;
         const authenticated = await login(username, password);
         if(authenticated.success) {
         if(!process.env.ACCESS_TOKEN_SECRET) {res.status(500).send('Access token secret not found')};
         if(!process.env.REFRESH_TOKEN_SECRET) {res.status(500).send('Refresh token secret not found')};
-        const {id, username} = authenticated.user;
+        const {id, username, role} = authenticated.user;
         if(id) {
-            const userData = {id, username};
-            const refreshToken = await generateToken(userData, process.env.REFRESH_TOKEN_SECRET || '');
+
+            const refreshToken = await generateToken({id, username, role}, process.env.REFRESH_TOKEN_SECRET || '');
             let refreshTokens = await getRefreshTokens(id);
             refreshTokens.push(refreshToken);
-            await query('UPDATE users SET refresh_tokens = $1 WHERE id = $2', [refreshTokens, id]);
-            const accessToken = await generateToken(userData, process.env.ACCESS_TOKEN_SECRET || '', process.env.ACCESS_TOKEN_EXPIRATION);
+            await query('UPDATE users SET refresh_tokens = $1, last_login = NOW() WHERE id = $2', [refreshTokens, id]);
+            const accessToken = await generateToken({id, username, role}, process.env.ACCESS_TOKEN_SECRET || '', process.env.ACCESS_TOKEN_EXPIRATION);
             res.status(200).send({
-            success: true,
-            accessToken,
-            accessTokenExpiration: process.env.ACCESS_TOKEN_EXPIRATION,
-            refreshToken
+                success: true,
+                accessToken,
+                accessTokenExpiration: process.env.ACCESS_TOKEN_EXPIRATION,
+                refreshToken
             });
         } else {
             throw new Error('USER_ID_UNDEFINED');
@@ -61,27 +64,37 @@ app.post('/login', async (req: Request, res: Response):Promise<void> => {
     }
 });
   
-app.post('/refresh', async (req: Request, res: Response):Promise<void> => {
+userRoutes.post('/refresh', async (req: Request, res: Response):Promise<void> => {
 try {
     const authHeaders = req.headers['authorization'] as string;
     const refreshToken:string = authHeaders && authHeaders.split(' ')[1];
     if(!refreshToken) {
-    res.status(401).send('REFRESH_TOKEN_NOT_FOUND');
+        res.status(401).send({
+            code: 'REFRESH_TOKEN_NOT_FOUND',
+            message: 'Please provide a refresh token to renew your access key.'
+        });
     } else if(!process.env.REFRESH_TOKEN_SECRET) {
-    res.status(500).send('Refresh token secret not found');
+        res.status(500).send({
+            code: 'REFRESH_TOKEN_SECRET_UNDEFINED',
+            message: 'Refresh token secret has not been set up.'
+        });
     } else {
-    const user = await jwt.verify(refreshToken, process.env.REFRESH_TOKEN_SECRET);
-    const accessToken = await generateToken(user, process.env.ACCESS_TOKEN_SECRET || '', process.env.ACCESS_TOKEN_EXPIRATION);
-    res.status(200).send({
-        success: true,
-        accessToken,
-        accessTokenExpiration: process.env.ACCESS_TOKEN_EXPIRATION,
-    });
-    }
+        const data = jwt.verify(refreshToken, process.env.REFRESH_TOKEN_SECRET) as jwt.JwtPayload;
+        const {id, username, role} = data;
+        const accessToken = await generateToken({id, username, role}, process.env.ACCESS_TOKEN_SECRET || '', process.env.ACCESS_TOKEN_EXPIRATION);
+        res.status(200).send({
+            success: true,
+            accessToken,
+            accessTokenExpiration: process.env.ACCESS_TOKEN_EXPIRATION,
+        });
+    };
 } catch(err) {
     if (err instanceof Error) {
     if(err.message === 'jwt expired' || err.message === 'invalid token') {
-        res.status(403).send('NOT_AUTHORIZED');
+        res.status(403).send({
+            code: 'INVALID_CREDENTIALS',
+            message: err.message
+        });
     } else {
         res.status(500).send(err.message);
     }
@@ -89,9 +102,9 @@ try {
 }
 }); 
 
-app.delete('/logout', authenticateToken, async (req: Request, res: Response):Promise<void> => {
+userRoutes.delete('/logout', authenticateToken, async (req: Request, res: Response):Promise<void> => {
     try {
-        const {id} = req.user.userData;
+        const {id} = req.user;
         const {refreshToken} = req.body;
         if(id && refreshToken) {
         let refreshTokens = await getRefreshTokens(id);
@@ -115,22 +128,26 @@ app.delete('/logout', authenticateToken, async (req: Request, res: Response):Pro
     }
 });
 
-app.delete('/logout-all', authenticateToken, async (req: Request, res: Response):Promise<void> => {
+userRoutes.delete('/logout-all', authenticateToken, async (req: Request, res: Response):Promise<void> => {
     try {
         const {id} = req.user.userData;
+   
         if(id) {
-        await query('UPDATE users SET refresh_tokens = $1 WHERE id = $2', [[], id]);
-        res.status(403).send('LOGGED_OUT_ALL');
-        } 
+            await query('UPDATE users SET refresh_tokens = $1 WHERE id = $2', [[], id]);
+            res.status(403).send('LOGGED_OUT_ALL');
+        } else {
+            res.status(500).send('ID_NOT_FOUND')
+        }
     } catch(err) {
         if (err instanceof Error) {
-        res.status(500).send(err.message);
+            res.status(500).send(err.message);
+            return;
         }
-        res.status(500).send(err)
+        res.status(500).send(err);
     }
 });
 
-app.post('/forgot-password', async (req: Request, res: Response):Promise<void> => {
+userRoutes.post('/forgot-password', async (req: Request, res: Response):Promise<void> => {
     try {
         const {email} = req.body;
         if(!email) { res.status(300).send('EMAIL_UNDEFINED')}; 
@@ -167,7 +184,7 @@ app.post('/forgot-password', async (req: Request, res: Response):Promise<void> =
     }
 });
 
-app.post('/reset-password', async (req: Request, res: Response): Promise<void> => {
+userRoutes.post('/reset-password', async (req: Request, res: Response): Promise<void> => {
     try {
         const { token, newPassword } = req.body;
         await resetPassword(token, newPassword);
@@ -184,20 +201,31 @@ app.post('/reset-password', async (req: Request, res: Response): Promise<void> =
     }
 });
 
-app.delete('/user', authenticateToken, async (req: Request, res: Response): Promise<void> => {
+userRoutes.delete('/user', authenticateToken, async (req: Request, res: Response): Promise<void> => {
     try {
-        const {id} = req.user.userData;
-        const {userId} = req.body;
-        
+        const { id } = req.user;
+        const { userId } = req.body;
+
         // Only allow users to delete their own account or admins (if you have roles)
-        if(userId && userId !== id) {
+        if (userId && userId !== id) {
             res.status(403).send('NOT_AUTHORIZED');
         }
 
-        await query('DELETE FROM users WHERE id = $1', [userId || id]);
+        const targetId = userId || id;
+
+        // Delete related rows in child tables first
+        await query('DELETE FROM posts WHERE owner_id = $1', [targetId]);
+        await query('DELETE FROM endpoints WHERE owner_id = $1', [targetId]);
+
+        // Delete the user
+        await query('DELETE FROM users WHERE id = $1', [targetId]);
+
         res.status(200).send({ success: true, message: 'User deleted successfully.' });
     } catch (err) {
-        res.status(500).send({ success: false, error: err instanceof Error ? err.message : err });
+        console.error(err);
+        res.status(500).send({ code:'SERVER_ERROR', error: err instanceof Error ? err.message : err });
     }
 });
+
+export default userRoutes;
 
