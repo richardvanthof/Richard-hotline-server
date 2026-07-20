@@ -15,7 +15,7 @@ import initDB from './db/init';
 
 
 import manageUserRoutes from './routes/manageUsers';
-import managePosts from './/routes/managePosts';
+import managePosts from './routes/managePosts';
 import manageEndpoints from './routes/manageEndpoints';
 
 //For env File 

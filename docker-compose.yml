@@ -24,9 +24,10 @@ services:
       - "9000:9000"
     volumes:
       - .:/usr/src/app          # Mount the current directory to the container
-      - /usr/src/app/node_modules
+      - node_modules:/usr/src/app/node_modules
     depends_on:
       - postgres
   
 volumes:
   postgres_data:
+  node_modules:
