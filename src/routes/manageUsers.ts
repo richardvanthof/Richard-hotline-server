@@ -155,7 +155,8 @@ userRoutes.delete('/logout', authenticateToken, async (req: Request, res: Respon
 
 userRoutes.delete('/logout-all', authenticateToken, async (req: Request, res: Response):Promise<void> => {
     try {
-        const {id} = req.user.userData;
+        const {id} = req.user;
+        
    
         if(id) {
             await query('UPDATE users SET refresh_tokens = $1 WHERE id = $2', [[], id]);
