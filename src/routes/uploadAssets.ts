@@ -1,8 +1,9 @@
 import { Router, Request, Response } from "express";
-import { v2 as cloudinary } from "cloudinary";
+import { S3Client, PutObjectCommand } from "@aws-sdk/client-s3";
 import multer from "multer";
-import DatauriParser from "datauri/parser";
 import { authenticateToken } from "../authorization/authorization";
+import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
+import { GetObjectCommand } from "@aws-sdk/client-s3";
 
 const uploadRoutes = Router();
 
@@ -22,15 +23,20 @@ interface AuthenticatedRequest extends Request {
 }
 
 // -----------------------------------------------------------------------------
-// Cloudinary
+// Cloudflare R2 Configuration
 // -----------------------------------------------------------------------------
 
-cloudinary.config({
-  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
-  api_key: process.env.CLOUDINARY_API_KEY,
-  api_secret: process.env.CLOUDINARY_API_SECRET,
-  secure: true,
+const r2Client = new S3Client({
+  region: "auto",
+  endpoint: process.env.R2_ENDPOINT,
+  credentials: {
+    accessKeyId: process.env.R2_ACCESS_KEY_ID || "",
+    secretAccessKey: process.env.R2_SECRET_ACCESS_KEY || "",
+  },
 });
+
+const R2_BUCKET_NAME = process.env.R2_BUCKET_NAME || "hotline-assets";
+const R2_PUBLIC_DOMAIN = process.env.R2_PUBLIC_DOMAIN || "";
 
 // -----------------------------------------------------------------------------
 // Multer
@@ -54,8 +60,6 @@ export const upload = multer({
   },
 });
 
-const datauriParser = new DatauriParser();
-
 // -----------------------------------------------------------------------------
 // Routes
 // -----------------------------------------------------------------------------
@@ -66,15 +70,16 @@ uploadRoutes.post(
   upload.array("images"),
   async (req: Request, res: Response): Promise<void> => {
     try {
+      const authReq = req as unknown as AuthenticatedRequest;
       const images = await uploadImages(
-        (req as AuthenticatedRequest).user.id,
-        req.body.path,
-        (req as AuthenticatedRequest).files
+        authReq.user.id,
+        authReq.body.path,
+        authReq.files
       );
 
       res.status(200).json(images);
     } catch (err) {
-      console.error("Cloudinary upload failed:", err);
+      console.error("R2 upload failed:", err);
 
       res.status(500).json({
         error: "Failed to upload images.",
@@ -106,32 +111,36 @@ export async function uploadImages(
     ""
   );
 
-  const options = {
-    folder: `hotline/${userId}/${safeFolder}`,
-    use_filename: true,
-    unique_filename: true,
-    overwrite: false,
-  };
+  const uploadedUrls: string[] = [];
 
-  const uploadedUrls = await Promise.all(
-    files.map(async (file) => {
-      const dataUri = datauriParser.format(
-        file.originalname,
-        file.buffer
-      ).content;
+  for (const file of files) {
+    const objectKey = `hotline/${userId}/${safeFolder}/${Date.now()}-${file.originalname}`;
 
-      if (!dataUri) {
-        throw new Error(`Failed to parse ${file.originalname}`);
-      }
+    const uploadParams = {
+      Bucket: R2_BUCKET_NAME,
+      Key: objectKey,
+      Body: file.buffer,
+      ContentType: file.mimetype,
+      ContentDisposition: "inline",
+    };
 
-      const result = await cloudinary.uploader.upload(
-        dataUri,
-        options
-      );
+    await r2Client.send(new PutObjectCommand(uploadParams));
 
-      return result.secure_url;
-    })
-  );
+    // Construct public URL
+    let publicUrl: string;
+    if (R2_PUBLIC_DOMAIN) {
+      publicUrl = `https://${R2_PUBLIC_DOMAIN}/${objectKey}`;
+    } else {
+      // Generate a pre-signed URL that expires in 1 year (or use your preferred TTL)
+      const command = new GetObjectCommand({
+        Bucket: R2_BUCKET_NAME,
+        Key: objectKey,
+      });
+      publicUrl = await getSignedUrl(r2Client, command, { expiresIn: 31536000 });
+    }
+
+    uploadedUrls.push(publicUrl);
+  }
 
   return {
     uris: uploadedUrls,

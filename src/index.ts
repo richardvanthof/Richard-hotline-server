@@ -17,6 +17,7 @@ import initDB from './db/init';
 import manageUserRoutes from './routes/manageUsers';
 import managePosts from './routes/managePosts';
 import manageEndpoints from './routes/manageEndpoints';
+import uploadAssets from './routes/uploadAssets';
 
 //For env File 
 dotenv.config();
@@ -52,7 +53,7 @@ app.use(limiter)
 app.use(manageUserRoutes);
 app.use(managePosts);
 app.use(manageEndpoints);
-
+app.use(uploadAssets);
 app.get('/', (req: Request, res: Response):void => {
   res.send('You reached the Makker Hotline API');
 });
