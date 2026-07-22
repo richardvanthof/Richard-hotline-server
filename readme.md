@@ -49,3 +49,25 @@ Happy hacking!
 
 ### API-endpoints
 View all API endpoints by opening the file [api-calls.postman_collection.json](api-calls.postman_collection.json) in Postman.
+
+## troubleshooting
+- If you get an error like the following, an error has occured with the Docker caching. Delete all containers and data and rebuild or use `docker compose up --build.`
+```
+Dockerfile:17
+
+--------------------
+
+  15 |     
+
+  16 |     # Build the TypeScript code
+
+  17 | >>> RUN npm run build
+
+  18 |     
+
+  19 |     # Expose the port the app runs on
+
+--------------------
+
+failed to solve: process "/bin/sh -c npm run build" did not complete successfully: exit code: 2
+```
