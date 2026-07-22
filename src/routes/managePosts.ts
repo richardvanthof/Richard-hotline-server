@@ -1,13 +1,14 @@
 
-import {authenticateToken} from '../authorization/authorization';
+import { authenticateToken } from '../authorization/authorization';
 import { Request, Response, Router } from 'express';
 import query from '../db/db_connect';
 import sendMail from '../lib/send-mail';
+import { z } from 'zod';
 
 const postRoutes = Router();
 const messageSubscribers = new Map<string, Set<Response>>();
 
-const getNewMessagesCount = async (userId:string):Promise<number> => {
+const getNewMessagesCount = async (userId: string): Promise<number> => {
     const queryText = `
         SELECT COUNT(*) AS total
         FROM posts
@@ -34,21 +35,21 @@ const notifyMessageSubscribers = async (userId: string) => {
 
 postRoutes.get('/message', authenticateToken, async (req: Request, res: Response) => {
     try {
-        const {id, role}:{id: string, role: string} = req.user;
+        const { id, role }: { id: string, role: string } = req.user;
         let {
-            paginate, 
-            status, 
+            paginate,
+            status,
             scope = 'user',
             direction = 'ASC'
-        }:{
-            paginate?: {limit: string, page: string, totalPages?: number}, 
-            status?: 'printed' | 'pending', 
-            scope: 'user'|'global',
+        }: {
+            paginate?: { limit: string, page: string, totalPages?: number },
+            status?: 'printed' | 'pending',
+            scope: 'user' | 'global',
             direction: 'ASC' | 'DESC'
         } = req.body;
 
         // check that only the admin can view messages of all users.
-        if(scope === 'global' && role !== 'admin') {
+        if (scope === 'global' && role !== 'admin') {
             return res.status(403).send({
                 code: 'PERMISSION_DENIED',
                 message: 'Insufficient permissions to perform this action.'
@@ -58,10 +59,10 @@ postRoutes.get('/message', authenticateToken, async (req: Request, res: Response
         let idx = 1;
         let command = 'SELECT * FROM posts p ';
         let countCommand = 'SELECT COUNT(*) AS total_posts FROM posts p ';
-        let params:(string|number)[] = [];
+        let params: (string | number)[] = [];
 
         // Add scope
-        if(scope === 'user') {
+        if (scope === 'user') {
             const string = `WHERE owner_id = $${idx} `;
             command += string;
             countCommand += string;
@@ -70,7 +71,7 @@ postRoutes.get('/message', authenticateToken, async (req: Request, res: Response
         }
 
         // Add filter
-        if(status) {
+        if (status) {
             const filterString = `${command.includes('WHERE') ? 'AND' : 'WHERE'} printed_at IS ${status === 'printed' ? 'NOT ' : ''}NULL `;
             command += filterString;
             countCommand += filterString;
@@ -80,13 +81,13 @@ postRoutes.get('/message', authenticateToken, async (req: Request, res: Response
         command += `ORDER BY created_at ${direction} `;
         let totalPosts = 0;
         // Add pagination
-        if(paginate) {
+        if (paginate) {
             const page = Math.max(parseInt(paginate.page) || 1, 1);
             const limit = Math.max(parseInt(paginate.limit) || 10, 1);
             const offset = (page - 1) * limit;
             const countResult = await query(countCommand, params);
             totalPosts = parseInt(countResult.rows[0]?.total_posts || '0', 10);
-            paginate.totalPages = Math.ceil(totalPosts/limit);
+            paginate.totalPages = Math.ceil(totalPosts / limit);
 
             command += `LIMIT $${idx} `;
             params.push(limit);
@@ -107,8 +108,8 @@ postRoutes.get('/message', authenticateToken, async (req: Request, res: Response
             data: resp.rows
         });
 
-    } catch(err) {
-        if(err instanceof Error) {
+    } catch (err) {
+        if (err instanceof Error) {
             res.status(500).send({
                 code: 'UNKNOWN_INTERNAL_ERROR',
                 message: `An unexpected error occured: ${err.message}`
@@ -122,9 +123,27 @@ postRoutes.get('/message', authenticateToken, async (req: Request, res: Response
     }
 });
 
-postRoutes.post('/message', async (req: Request, res: Response) =>{
-    try{
-        const {name, email, ownerId, content} = req.body;
+const ImageBlockSchema = z.object({
+    type: z.literal('image'),
+    src: z.string()
+});
+
+const TextBlockSchema = z.object({
+    type: z.literal('text'),
+    content: z.string()
+});
+
+const MessageSchema = z.object({
+    name: z.string().min(1, "Name is required"),
+    email: z.string().email("Invalid email format"),
+    ownerId: z.string().optional(),
+    content: z.array(z.union([ImageBlockSchema, TextBlockSchema]))
+});
+
+postRoutes.post('/message', async (req: Request, res: Response) => {
+    try {
+        const validatedData = MessageSchema.parse(req.body);
+        const { name, email, ownerId, content } = validatedData;
         console.log(content)
         const command = `
             INSERT INTO posts (name, email, content, owner_id)
@@ -141,9 +160,17 @@ postRoutes.post('/message', async (req: Request, res: Response) =>{
             message: 'Message created successfully.',
             data: resp.rows
         })
-        
+
     } catch (err) {
-        if(err instanceof Error){
+        console.error(err);
+        if (err instanceof z.ZodError) {
+            return res.status(400).send({
+                code: 'VALIDATION_ERROR',
+                message: 'Invalid input data',
+                errors: err.issues
+            });
+        }
+        if (err instanceof Error) {
             res.status(500).send(err.message)
         } else {
             res.status(500).send(err)
@@ -154,8 +181,8 @@ postRoutes.post('/message', async (req: Request, res: Response) =>{
 
 postRoutes.patch('/message', authenticateToken, async (req: Request, res: Response) => {
     try {
-        const { 
-            postId, name, email, content, printedAt }:{ postId:number, name?: string, email?:string, content?:string, printedAt?:Date } = req.body;
+        const {
+            postId, name, email, content, printedAt }: { postId: number, name?: string, email?: string, content?: string, printedAt?: Date } = req.body;
         if (!postId) return res.status(400).send({ code: 'INVALID_INPUT', message: 'Post ID is required.' });
 
         const result = await query('SELECT owner_id FROM posts WHERE post_id = $1', [postId]);
@@ -226,7 +253,7 @@ postRoutes.patch('/confirm-receipt', authenticateToken, async (req: Request, res
     try {
         let { messages } = req.body;
         const { id, username } = req.user;
-        console.log({id, username});
+        console.log({ id, username });
         console.log(messages);
         // Ensure messages is an array
         messages = Array.isArray(messages) ? messages : [messages];
@@ -241,8 +268,8 @@ postRoutes.patch('/confirm-receipt', authenticateToken, async (req: Request, res
         // Process each message
         const results = await Promise.all(
             messages.map(async ({ postId, email }: { postId: number; email: string }) => {
-                console.log({postId})
-                if(!postId) {
+                console.log({ postId })
+                if (!postId) {
                     return {
                         code: 'POST_ID_UNDEFINED',
                         message: 'Post ID is undefined.'
@@ -258,8 +285,8 @@ postRoutes.patch('/confirm-receipt', authenticateToken, async (req: Request, res
                     [postId, id]
                 );
                 console.log(resp.rows);
-                if(resp.rows.length > 0) {
-                     // Send email notification
+                if (resp.rows.length > 0) {
+                    // Send email notification
                     await sendMail({
                         to: email,
                         subject: `Your message to ${username} was printed`,
@@ -283,7 +310,7 @@ postRoutes.patch('/confirm-receipt', authenticateToken, async (req: Request, res
                     }
                 };
 
-               
+
 
                 return { resp: resp.rows[0], postId, id };
             })
@@ -303,10 +330,10 @@ postRoutes.patch('/confirm-receipt', authenticateToken, async (req: Request, res
 
 postRoutes.patch('/status', authenticateToken, async (req: Request, res: Response) => {
     try {
-        const {id} = req.user;
+        const { id } = req.user;
         const count = await getNewMessagesCount(id);
-        res.status(200).send({count});
-    } catch(err){
+        res.status(200).send({ count });
+    } catch (err) {
         res.status(500).send(err)
     }
 })
