@@ -35,6 +35,15 @@ SMTP_PASS=********
 # EMAIL
 MAIL_FROM_EMAIL='no-reply@example.com'
 MAIL_FROM_NAME='Hotline Service'
+
+# BLOB STORAGE
+R2_ENDPOINT=https://24****20.r2.cloudflarestorage.com
+R2_ACCESS_KEY_ID=c20****0aee
+R2_SECRET_ACCESS_KEY=8795******b4480
+R2_BUCKET_NAME=hotline-assets
+R2_PUBLIC_DOMAIN=assets.hotline.therichard.space
+# we use Cloudflare blob storage, but you can use any S3 compatible service.
+# Learn more at: https://developers.cloudflare.com/r2/api/tokens/
 ```
 
 4. Start dev server with one of the following options:
