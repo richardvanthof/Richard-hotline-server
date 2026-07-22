@@ -66,13 +66,12 @@ export const upload = multer({
 
 uploadRoutes.post(
   "/images",
-  authenticateToken,
   upload.array("images"),
   async (req: Request, res: Response): Promise<void> => {
     try {
       const authReq = req as unknown as AuthenticatedRequest;
       const images = await uploadImages(
-        authReq.user.id,
+        authReq.body.userId,
         authReq.body.path,
         authReq.files
       );
