@@ -1,9 +1,6 @@
 // Packages
 import express, { Express, Request, Response, Application } from 'express';
 import dotenv from 'dotenv';
-const DatauriParser = require('datauri/parser');
-
-import query from './db/db_connect'; // Database connection
 
 // Middleware
 import { rateLimit } from 'express-rate-limit' // Rate limiting
