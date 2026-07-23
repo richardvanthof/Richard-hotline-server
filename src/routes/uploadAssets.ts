@@ -71,9 +71,8 @@ uploadRoutes.post(
     try {
       const authReq = req as unknown as AuthenticatedRequest;
       const images = await uploadImages(
-        authReq.body.userId,
-        authReq.body.path,
-        authReq.files
+        req.body.userId,
+        req.body.images
       );
 
       res.status(200).json(images);
@@ -93,7 +92,6 @@ uploadRoutes.post(
 
 export async function uploadImages(
   userId: string,
-  path: string | undefined,
   files: Express.Multer.File[]
 ): Promise<UploadedImages> {
   if (!userId) {
@@ -104,16 +102,10 @@ export async function uploadImages(
     throw new Error("No files uploaded.");
   }
 
-  // Prevent weird folder names
-  const safeFolder = (path ?? "message-assets").replace(
-    /[^a-zA-Z0-9/_-]/g,
-    ""
-  );
-
   const uploadedUrls: string[] = [];
 
   for (const file of files) {
-    const objectKey = `hotline/${userId}/${safeFolder}/${Date.now()}-${file.originalname}`;
+    const objectKey = `hotline/${userId}/hotline-assets/${Date.now()}-${file.originalname}`;
 
     const uploadParams = {
       Bucket: R2_BUCKET_NAME,
@@ -123,8 +115,8 @@ export async function uploadImages(
       ContentDisposition: "inline",
     };
 
-    await r2Client.send(new PutObjectCommand(uploadParams));
-
+    const res = await r2Client.send(new PutObjectCommand(uploadParams));
+    console.info(res);
     // Construct public URL
     let publicUrl: string;
     if (R2_PUBLIC_DOMAIN) {
