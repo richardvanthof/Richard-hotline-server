@@ -15,13 +15,6 @@ export interface UploadedImages {
   uris: string[];
 }
 
-interface AuthenticatedRequest extends Request {
-  user: {
-    id: string;
-  };
-  files: Express.Multer.File[];
-}
-
 // -----------------------------------------------------------------------------
 // Cloudflare R2 Configuration
 // -----------------------------------------------------------------------------
@@ -69,11 +62,13 @@ uploadRoutes.post(
   upload.array("images"),
   async (req: Request, res: Response): Promise<void> => {
     try {
-      const authReq = req as unknown as AuthenticatedRequest;
+      console.log("uploaded images frontend: ", req.body.images);
       const images = await uploadImages(
         req.body.userId,
         req.body.images
       );
+
+      console.log(images)
 
       res.status(200).json(images);
     } catch (err) {
@@ -105,7 +100,7 @@ export async function uploadImages(
   const uploadedUrls: string[] = [];
 
   for (const file of files) {
-    const objectKey = `hotline/${userId}/hotline-assets/${Date.now()}-${file.originalname}`;
+    const objectKey = `userdata/${userId}/message-assets/${Date.now()}-${file.originalname}`;
 
     const uploadParams = {
       Bucket: R2_BUCKET_NAME,
@@ -136,6 +131,7 @@ export async function uploadImages(
   return {
     uris: uploadedUrls,
   };
+  
 }
 
 export default uploadRoutes;
