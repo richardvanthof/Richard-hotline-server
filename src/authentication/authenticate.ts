@@ -3,7 +3,7 @@ import bcrypt from 'bcrypt';
 import jwt, { JwtPayload } from 'jsonwebtoken';
 import crypto from 'crypto';
 
-type UserData = {
+export type UserData = {
     firstName: string;
     lastName: string,
     email: string,
@@ -13,16 +13,21 @@ type UserData = {
     role?: string
 }
 
-const createUser = async (data:UserData, role: 'user'|'admin' = 'user') => {
-    const {firstName, lastName, email, username, password} = data;
+export type AccountData = {
+    data: UserData;
+    role: 'user' | 'admin';
+}
 
+const createUser = async (data:UserData):Promise<AccountData> => {
+    const {firstName, lastName, email, username, password} = data;
+    const role = 'user';
     try {
         const salt = await bcrypt.genSaltSync();
         const hashedPassword = await bcrypt.hashSync(password, salt);
         const text = `
             INSERT INTO users (first_name, last_name, email, username, password, role)
             VALUES ($1, $2, $3, $4, $5, $6)
-            RETURNING *;
+            RETURNING id, first_name, last_name, email, username, role;
         `;
         const values = [firstName, lastName, email, username, hashedPassword, role];
         const res = await query(text, values);
@@ -86,6 +91,7 @@ const generateResetToken = async (email: string): Promise<string> => {
         const user = await query('SELECT * FROM users WHERE email = $1', [email]);
         if (user.rows.length === 0) {
             throw new Error('USER_NOT_FOUND');
+           
         }
 
         const resetToken = crypto.randomBytes(32).toString('hex');

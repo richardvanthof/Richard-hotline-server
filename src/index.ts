@@ -1,6 +1,7 @@
 // Packages
 import express, { Express, Request, Response, Application } from 'express';
 import dotenv from 'dotenv';
+import path from 'path';
 
 // Middleware
 import { rateLimit } from 'express-rate-limit' // Rate limiting
@@ -43,6 +44,9 @@ app.use(express.json());
 app.use(express.urlencoded({extended: true}));
 app.use(cors())
 app.use(morgan('dev'));
+
+// Serve static files from the public directory
+app.use(express.static(path.join(__dirname, '../public')));
 
 // Add middleware for rate limiting
 app.use(limiter)

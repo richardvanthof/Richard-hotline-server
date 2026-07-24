@@ -6,7 +6,14 @@ import sendMail from '../lib/send-mail';
 import { z } from 'zod';
 import {Client} from 'pg';
 import { messageSubscribers, sendSseEvent } from '../db/sse';
-
+import validate from '../validators/validationMiddleware';
+import { 
+    CreateMessageSchema,
+    UpdateMessageSchema,
+    DeleteMessageSchema,
+    ConfirmReceiptSchema,
+    GetMessagesSchema
+} from '../validators/schemas/postSchemas';
 const postRoutes = Router();
 
 const getNewMessagesCount = async (userId: string): Promise<number> => {
@@ -19,7 +26,10 @@ const getNewMessagesCount = async (userId: string): Promise<number> => {
     return parseInt(result.rows[0]?.total || '0', 10);
 }
 
-postRoutes.get('/message', authenticateToken, async (req: Request, res: Response) => {
+postRoutes.get(
+    '/message', 
+    authenticateToken, validate(GetMessagesSchema), 
+    async (req: Request, res: Response) => {
     try {
         const { id, role }: { id: string, role: string } = req.user;
         let {
@@ -119,17 +129,10 @@ const TextBlockSchema = z.object({
     content: z.string()
 });
 
-const MessageSchema = z.object({
-    name: z.string().min(1, "Name is required"),
-    email: z.string().email("Invalid email format"),
-    ownerId: z.string().optional(),
-    content: z.array(z.union([ImageBlockSchema, TextBlockSchema]))
-});
-
-postRoutes.post('/message', async (req: Request, res: Response) => {
+postRoutes.post('/message', 
+    validate(CreateMessageSchema), async (req: Request, res: Response) => {
     try {
-        const validatedData = MessageSchema.parse(req.body);
-        const { name, email, ownerId, content } = validatedData;
+        const { name, email, ownerId, content } = req.body;
         console.log(content)
         const command = `
             INSERT INTO posts (name, email, content, owner_id)
@@ -147,13 +150,6 @@ postRoutes.post('/message', async (req: Request, res: Response) => {
 
     } catch (err) {
         console.error(err);
-        if (err instanceof z.ZodError) {
-            return res.status(400).send({
-                code: 'VALIDATION_ERROR',
-                message: 'Invalid input data',
-                errors: err.issues
-            });
-        }
         if (err instanceof Error) {
             res.status(500).send(err.message)
         } else {
@@ -163,7 +159,9 @@ postRoutes.post('/message', async (req: Request, res: Response) => {
 
 })
 
-postRoutes.patch('/message', authenticateToken, async (req: Request, res: Response) => {
+postRoutes.patch('/message', 
+    authenticateToken, validate(UpdateMessageSchema), 
+    async (req: Request, res: Response) => {
     try {
         const {
             postId, name, email, content, printedAt }: { postId: number, name?: string, email?: string, content?: string, printedAt?: Date } = req.body;
@@ -195,7 +193,10 @@ postRoutes.patch('/message', authenticateToken, async (req: Request, res: Respon
     }
 });
 
-postRoutes.delete('/message', authenticateToken, async (req: Request, res: Response) => {
+postRoutes.delete(
+    '/message', authenticateToken, 
+    validate(DeleteMessageSchema), 
+    async (req: Request, res: Response) => {
     try {
         const { postId } = req.body;
 
@@ -233,7 +234,10 @@ postRoutes.delete('/message', authenticateToken, async (req: Request, res: Respo
 });
 
 
-postRoutes.patch('/confirm-receipt', authenticateToken, async (req: Request, res: Response) => {
+postRoutes.patch('/confirm-receipt', 
+    authenticateToken, 
+    validate(ConfirmReceiptSchema), 
+    async (req: Request, res: Response) => {
     try {
         let { messages } = req.body;
         const { id, username } = req.user;
@@ -312,7 +316,10 @@ postRoutes.patch('/confirm-receipt', authenticateToken, async (req: Request, res
     }
 });
 
-postRoutes.patch('/status', authenticateToken, async (req: Request, res: Response) => {
+postRoutes.patch('/status', 
+    authenticateToken, 
+    validate(GetMessagesSchema), 
+    async (req: Request, res: Response) => {
     try {
         const { id } = req.user;
         const count = await getNewMessagesCount(id);
