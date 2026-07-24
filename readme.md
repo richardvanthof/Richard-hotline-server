@@ -2,10 +2,9 @@
 Backend API for the service.
 
 ### Dependencies
-- Vercel CLI (if you're gonna deploy on Vercel)
-- Firebase CLI
 - Node
 - Postman (for API debugging)
+- Docker
 
 ### Get started
 1. Install packages: `yarn`
@@ -49,6 +48,7 @@ R2_PUBLIC_DOMAIN=assets.hotline.therichard.space
 4. Start dev server with one of the following options:
 - Vercel emulator: `yarn vercel`
 - Regular dev server: `yarn dev`
+- Docker (includes Postgress DB): `docker compose up --build`
 5. Start the Firestore emulator to interface with the database:
 ```
 yarn db
