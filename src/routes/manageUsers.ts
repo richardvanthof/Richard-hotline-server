@@ -9,6 +9,18 @@ import { authenticateToken } from '../authorization/authorization';
 import sendMail from '../lib/send-mail';
 import jwt from 'jsonwebtoken';
 
+import validate from '../validators/validationMiddleware';
+import {
+    createUserSchema,
+    loginSchema,
+    logoutSchema,
+    forgotPasswordSchema,
+    resetPasswordSchema,
+    deleteUserSchema,
+    refreshHeaderSchema
+} from '../validators/schemas/userSchemas';
+
+
 import {UserData} from '../authentication/authenticate';
 
 const userRoutes = Router()
@@ -89,7 +101,7 @@ async function validateToken(token: string): Promise<boolean> {
 }
 
 // ACCOUNT MANAGEMENT
-userRoutes.post('/users', async (req: Request, res: Response):Promise<void> => {
+userRoutes.post('/users', validate(createUserSchema), async (req: Request, res: Response):Promise<void> => {
     try {
         const userInfo: UserData = req.body;
         const resp = await createUser(userInfo);
@@ -111,7 +123,7 @@ userRoutes.post('/users', async (req: Request, res: Response):Promise<void> => {
 
 // Authenticate
 
-userRoutes.post('/login', async (req: Request, res: Response):Promise<void> => {
+userRoutes.post('/login', validate(loginSchema), async (req: Request, res: Response):Promise<void> => {
     try {
         const {username, password} = req.body;
         const authenticated = await login(username, password);
@@ -164,7 +176,7 @@ userRoutes.post('/login', async (req: Request, res: Response):Promise<void> => {
     }
 });
   
-userRoutes.post('/refresh', async (req: Request, res: Response):Promise<void> => {
+userRoutes.post('/refresh', validate(refreshHeaderSchema), async (req: Request, res: Response):Promise<void> => {
 try {
     const authHeaders = req.headers['authorization'] as string;
     const refreshToken:string = authHeaders && authHeaders.split(' ')[1];
@@ -194,7 +206,7 @@ try {
 }
 }); 
 
-userRoutes.delete('/logout', authenticateToken, async (req: Request, res: Response):Promise<void> => {
+userRoutes.delete('/logout', validate(logoutSchema), authenticateToken, async (req: Request, res: Response):Promise<void> => {
     try {
         const {id} = req.user;
         const {refreshToken} = req.body;
@@ -223,7 +235,7 @@ userRoutes.delete('/logout', authenticateToken, async (req: Request, res: Respon
     }
 });
 
-userRoutes.delete('/logout-all', authenticateToken, async (req: Request, res: Response):Promise<void> => {
+userRoutes.delete('/logout-all', validate(logoutSchema), authenticateToken, async (req: Request, res: Response):Promise<void> => {
     try {
         const {id} = req.user;
         
@@ -245,7 +257,7 @@ userRoutes.delete('/logout-all', authenticateToken, async (req: Request, res: Re
     }
 });
 
-userRoutes.post('/forgot-password', async (req: Request, res: Response):Promise<void> => {
+userRoutes.post('/forgot-password', validate(forgotPasswordSchema), async (req: Request, res: Response):Promise<void> => {
     try {
         const {email} = req.body;
         if(!email) { res.status(400).send(sendError(res, 'EMAIL_UNDEFINED')); return; }; 
@@ -283,11 +295,11 @@ userRoutes.post('/forgot-password', async (req: Request, res: Response):Promise<
     }
 });
 
-userRoutes.get('/reset-password', (req: Request, res: Response) => {
+userRoutes.get('/reset-password', validate(resetPasswordSchema), (req: Request, res: Response) => {
     res.sendFile(path.join(__dirname, '../../public/reset-password.html'));
 });
 
-userRoutes.post('/reset-password', async (req: Request, res: Response): Promise<void> => {
+userRoutes.post('/reset-password', validate(resetPasswordSchema), async (req: Request, res: Response): Promise<void> => {
     try {
         const { token, newPassword } = req.body;
         await resetPassword(token, newPassword);
@@ -306,7 +318,7 @@ userRoutes.post('/reset-password', async (req: Request, res: Response): Promise<
     }
 });
 
-userRoutes.delete('/user', authenticateToken, async (req: Request, res: Response): Promise<void> => {
+userRoutes.delete('/user', validate(deleteUserSchema), authenticateToken, async (req: Request, res: Response): Promise<void> => {
     try {
         const { id } = req.user;
         const { userId } = req.body;
