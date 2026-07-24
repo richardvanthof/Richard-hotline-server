@@ -57,15 +57,24 @@ export const upload = multer({
 // Routes
 // -----------------------------------------------------------------------------
 
+type UploadRequest = Request & {
+  body: {
+    userId: string;
+    images: string[];
+  };
+  files: Express.Multer.File[];
+};
+
 uploadRoutes.post(
   "/images",
   upload.array("images"),
   async (req: Request, res: Response): Promise<void> => {
+    const uploadRequest = req as UploadRequest;
+    console.log("images", uploadRequest.body.images, "files", uploadRequest.files)
     try {
-      console.log("uploaded images frontend: ", req.body.images);
       const images = await uploadImages(
-        req.body.userId,
-        req.body.images
+        uploadRequest.body.userId,
+        uploadRequest.files
       );
 
       console.log(images)
