@@ -134,7 +134,7 @@ export async function uploadImages(
       publicUrl = await getSignedUrl(r2Client, command, { expiresIn: 31536000 });
     }
 
-    uploadedUrls.push(publicUrl);
+    uploadedUrls.push(encodeURI(publicUrl));
   }
 
   return {
