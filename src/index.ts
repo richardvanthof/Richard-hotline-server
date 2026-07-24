@@ -60,5 +60,5 @@ app.get('/x-forwarded-for', (request, response) => {
 })
 
 app.listen(port, () => {
-  console.log(`Server is Fire at http://localhost:${port}`);
+  console.log(`Server is running at http://localhost:${port}`);
 });

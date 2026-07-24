@@ -1,12 +1,13 @@
 
 import { authenticateToken } from '../authorization/authorization';
 import { Request, Response, Router } from 'express';
-import query from '../db/db_connect';
+import query, {startNotificationListener} from '../db/db_connect';
 import sendMail from '../lib/send-mail';
 import { z } from 'zod';
+import {Client} from 'pg';
+import { messageSubscribers, sendSseEvent } from '../db/sse';
 
 const postRoutes = Router();
-const messageSubscribers = new Map<string, Set<Response>>();
 
 const getNewMessagesCount = async (userId: string): Promise<number> => {
     const queryText = `
@@ -17,21 +18,6 @@ const getNewMessagesCount = async (userId: string): Promise<number> => {
     const result = await query(queryText, [userId]);
     return parseInt(result.rows[0]?.total || '0', 10);
 }
-
-const sendSseEvent = (res: Response, event: string, data: unknown) => {
-    res.write(`event: ${event}\n`);
-    res.write(`data: ${JSON.stringify(data)}\n\n`);
-};
-
-const notifyMessageSubscribers = async (userId: string) => {
-    const subscribers = messageSubscribers.get(userId);
-    if (!subscribers || subscribers.size === 0) return;
-
-    const count = await getNewMessagesCount(userId);
-    for (const res of subscribers) {
-        sendSseEvent(res, 'message-count', { count, hasMessages: count > 0 });
-    }
-};
 
 postRoutes.get('/message', authenticateToken, async (req: Request, res: Response) => {
     try {
@@ -152,9 +138,7 @@ postRoutes.post('/message', async (req: Request, res: Response) => {
         `;
         const resp = await query(command, [name, email, JSON.stringify(content), ownerId])
         console.log(resp.rows[0]);
-        if (ownerId) {
-            await notifyMessageSubscribers(ownerId);
-        }
+       
         res.status(200).send({
             code: 'POST_CREATED',
             message: 'Message created successfully.',
@@ -301,7 +285,7 @@ postRoutes.patch('/confirm-receipt', authenticateToken, async (req: Request, res
                         </div>
                         `,
                     });
-                    await notifyMessageSubscribers(id);
+                   
                 } else {
                     return {
                         postId: postId,
@@ -338,41 +322,42 @@ postRoutes.patch('/status', authenticateToken, async (req: Request, res: Respons
     }
 })
 
-postRoutes.get('/messages-available', authenticateToken, async (req: Request, res: Response) => {
-    const { id } = req.user;
+postRoutes.get(
+    "/messages-available",
+    authenticateToken,
+    async (req: Request, res: Response) => {
+        const { id } = req.user;
 
-    res.status(200);
-    res.setHeader('Content-Type', 'text/event-stream');
-    res.setHeader('Cache-Control', 'no-cache, no-transform');
-    res.setHeader('Connection', 'keep-alive');
-    res.setHeader('X-Accel-Buffering', 'no');
-    res.flushHeaders?.();
+        res.status(200);
+        res.setHeader("Content-Type", "text/event-stream");
+        res.setHeader("Cache-Control", "no-cache, no-transform");
+        res.setHeader("Connection", "keep-alive");
+        res.setHeader("X-Accel-Buffering", "no");
+        res.flushHeaders?.();
 
-    const userSubscribers = messageSubscribers.get(id) ?? new Set<Response>();
-    userSubscribers.add(res);
-    messageSubscribers.set(id, userSubscribers);
+        const subscribers = messageSubscribers.get(id) ?? new Set<Response>();
+        subscribers.add(res);
+        messageSubscribers.set(id, subscribers);
 
-    const initialCount = await getNewMessagesCount(id);
-    sendSseEvent(res, 'message-count', {
-        count: initialCount,
-        hasMessages: initialCount > 0,
-    });
+        const initialCount = await getNewMessagesCount(id);
+        sendSseEvent(res, "message-count", {
+            count: initialCount,
+            hasMessages: initialCount > 0,
+        });
 
-    const heartbeatId = setInterval(() => {
-        sendSseEvent(res, 'ping', { time: new Date().toISOString() });
-    }, 25000);
+        const heartbeatId = setInterval(() => {
+            sendSseEvent(res, "ping", { time: new Date().toISOString() });
+        }, 25000);
 
-    req.on('close', () => {
-        clearInterval(heartbeatId);
-        const subscribers = messageSubscribers.get(id);
-        if (subscribers) {
+        req.on("close", () => {
+            clearInterval(heartbeatId);
             subscribers.delete(res);
             if (subscribers.size === 0) {
                 messageSubscribers.delete(id);
             }
-        }
-        res.end();
-    });
-});
+            res.end();
+        });
+    }
+);
 
 export default postRoutes;
