@@ -1,191 +1,544 @@
 {
-	"info": {
-		"_postman_id": "8009f35c-4c3e-4925-a93a-0098d569e704",
-		"name": "Hotline api (dev)",
-		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
-	},
-	"item": [
-		{
-			"name": "Confirm receipt",
-			"request": {
-				"method": "PUT",
-				"header": [],
-				"body": {
-					"mode": "raw",
-					"raw": "{\n    \"user\": \"Jabe\",\n    \"messageIds\": [\"Jb7IWk1pSqTiw0Q6pIQp\"]\n}",
-					"options": {
-						"raw": {
-							"language": "json"
-						}
-					}
-				},
-				"url": {
-					"raw": "{{domain}}/confirm",
-					"host": [
-						"{{domain}}"
-					],
-					"path": [
-						"confirm"
-					]
-				}
-			},
-			"response": []
-		},
-		{
-			"name": "Add Message",
-			"request": {
-				"method": "POST",
-				"header": [],
-				"body": {
-					"mode": "raw",
-					"raw": "{\n    \"name\": \"Richard\",\n    \"email\": \"richardvanthof@pm.me\",\n    \"message\": \"hello world\"\n}",
-					"options": {
-						"raw": {
-							"language": "json"
-						}
-					}
-				},
-				"url": {
-					"raw": "{{domain}}/users/Jabe/add",
-					"host": [
-						"{{domain}}"
-					],
-					"path": [
-						"users",
-						"Jabe",
-						"add"
-					]
-				}
-			},
-			"response": []
-		},
-		{
-			"name": "Upload images",
-			"request": {
-				"method": "POST",
-				"header": [],
-				"body": {
-					"mode": "formdata",
-					"formdata": [
-						{
-							"key": "images",
-							"contentType": "image/png",
-							"type": "file",
-							"src": [
-								"/Users/richard/Pictures/Screenshots/Screenshot 2024-03-25 at 00.41.12.png",
-								"/Users/richard/Pictures/Screenshots/Screenshot 2024-03-26 at 16.05.51.png",
-								"/Users/richard/Pictures/Screenshots/Screenshot 2024-03-29 at 15.35.18.png"
-							]
-						},
-						{
-							"key": "user",
-							"value": "Jabe",
-							"type": "text"
-						}
-					]
-				},
-				"url": {
-					"raw": "{{domain}}/upload-images",
-					"host": [
-						"{{domain}}"
-					],
-					"path": [
-						"upload-images"
-					]
-				}
-			},
-			"response": []
-		},
-		{
-			"name": "Get user info",
-			"request": {
-				"method": "GET",
-				"header": [],
-				"url": {
-					"raw": "{{domain}}/user",
-					"host": [
-						"{{domain}}"
-					],
-					"path": [
-						"user"
-					]
-				}
-			},
-			"response": []
-		},
-		{
-			"name": "Update user info",
-			"request": {
-				"method": "PUT",
-				"header": [],
-				"body": {
-					"mode": "raw",
-					"raw": "{\n    \"user\": \"Jabe\",\n    \"data\": {\n        \"printer_status\":\"out-of-paper\"\n    }\n}",
-					"options": {
-						"raw": {
-							"language": "json"
-						}
-					}
-				},
-				"url": {
-					"raw": "{{domain}}/user",
-					"host": [
-						"{{domain}}"
-					],
-					"path": [
-						"user"
-					]
-				}
-			},
-			"response": []
-		},
-		{
-			"name": "Ping api root",
-			"request": {
-				"method": "GET",
-				"header": [],
-				"url": null
-			},
-			"response": []
-		},
-		{
-			"name": "Add account",
-			"request": {
-				"method": "GET",
-				"header": [],
-				"url": null
-			},
-			"response": []
-		}
-	],
-	"event": [
-		{
-			"listen": "prerequest",
-			"script": {
-				"type": "text/javascript",
-				"exec": [
-					""
-				]
-			}
-		},
-		{
-			"listen": "test",
-			"script": {
-				"type": "text/javascript",
-				"exec": [
-					""
-				]
-			}
-		}
-	],
-	"variable": [
-		{
-			"key": "domain",
-			"value": "api.hotline.therichard.space"
-		},
-		{
-			"key": "demo-images",
-			"value": "[\n      \"https://res.cloudinary.com/dgwcww6sy/image/upload/v1712066208/hotline/Jabe/message-assets/f2bwbpucgf7bcyf34cxu.png\",\n        \"https://res.cloudinary.com/dgwcww6sy/image/upload/v1712066210/hotline/Jabe/message-assets/hdizhv81n3mi1voqwsxb.png\",\n        \"https://res.cloudinary.com/dgwcww6sy/image/upload/v1712066211/hotline/Jabe/message-assets/nljcykbhqy1jsdwkaqmm.png\"]"
-		}
-	]
+  "info": {
+    "_postman_id": "9e8b216b-40d6-40ca-9d7f-7203f753ee93",
+    "name": "Hotline service",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "_exporter_id": "7559875"
+  },
+  "item": [
+    {
+      "name": "Authentication",
+      "item": [
+        {
+          "name": "Add user",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"firstName\": \"Richard2\",\n    \"lastName\": \"van 't Hof\",\n    \"email\": \"hello3@therichard.space\",\n    \"username\": \"{{$randomUserName}}/\",\n    \"password\": \"{{$randomPassword}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{host}}/users",
+              "host": [
+                "{{host}}"
+              ],
+              "path": [
+                "users"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "login",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"username\": \"richard\",\n    \"password\": \"pass2\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{host}}/login",
+              "host": [
+                "{{host}}"
+              ],
+              "path": [
+                "login"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Refresh access token",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "",
+                "type": "text",
+                "disabled": true
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"refreshToken\": \n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{host}}/refresh",
+              "host": [
+                "{{host}}"
+              ],
+              "path": [
+                "refresh"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "logout",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyRGF0YSI6eyJpZCI6MSwidXNlcm5hbWUiOiJyaWNoYXJkIn0sImlhdCI6MTc0NDk3NTczMSwiZXhwIjoxNzQ0OTc2NjMxfQ.xZ4RatTvcDrmnEchImgGW4IOGWO0Y8H8g_9jfIoCuHE",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "DELETE",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"refreshToken\": \"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyRGF0YSI6eyJpZCI6MSwidXNlcm5hbWUiOiJyaWNoYXJkIn0sImlhdCI6MTc0NDk3NTczMX0.tYRqqAz5xIi-NClq1m2Tl6vQPzsO7PhFTa2R4e1B6Oc\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{host}}/logout",
+              "host": [
+                "{{host}}"
+              ],
+              "path": [
+                "logout"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "logout-all",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyRGF0YSI6eyJpZCI6MSwidXNlcm5hbWUiOiJyaWNoYXJkIn0sImlhdCI6MTc0NDk3NjA2NiwiZXhwIjoxNzQ0OTc2OTY2fQ.oYctZyRmTar2h9ZrqF103BKcV1xvOA6Xod4ZZCF6br8",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{host}}/logout-all",
+              "host": [
+                "{{host}}"
+              ],
+              "path": [
+                "logout-all"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "reset password",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"token\": \"5184439720f23238fa6d756d9395324e523fd1de41da5d1c000222ca07f37748\",\n    \"newPassword\": \"pass2\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{host}}/reset-password",
+              "host": [
+                "{{host}}"
+              ],
+              "path": [
+                "reset-password"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "forgot password",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"email\": \"hello@therichard.space\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{host}}/forgot-password",
+              "host": [
+                "{{host}}"
+              ],
+              "path": [
+                "forgot-password"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "test authorization check",
+          "protocolProfileBehavior": {
+            "disableBodyPruning": true
+          },
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6NCwidXNlcm5hbWUiOiJpdm9ubmUiLCJyb2xlIjoiYWRtaW4iLCJpYXQiOjE3NDYyMjU4NTIsImV4cCI6MTc0NjIyNjc1Mn0.gPL9V_3W-2C6oPM_xTi87mtdb1wnntrnUG1LMvFc4io",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyRGF0YSI6eyJpZCI6OCwiZmlyc3RfbmFtZSI6IlJpY2hhcmQyIiwibGFzdF9uYW1lIjoidmFuICd0IEhvZiIsImVtYWlsIjoiaGVsbG8zQHRoZXJpY2hhcmQuc3BhY2UiLCJ1c2VybmFtZSI6InJpY2hhcmQ0IiwicGFzc3dvcmQiOiIkMmIkMTAkbXVwYWRBclUxTy84QnFCREhJQlZILkR1Si8zdWhKVzV3U1FWRXFjN21xTm1RbkpRdk1QWS4iLCJyb2xlIjoidXNlciIsImlzX2FjdGl2ZSI6dHJ1ZSwiY3JlYXRlZF9hdCI6IjIwMjUtMDQtMTdUMTk6Mjc6NDQuNjcwWiIsInVwZGF0ZWRfYXQiOiIyMDI1LTA0LTE3VDE5OjI3OjQ0LjY3MFoiLCJsYXN0X2xvZ2luIjpudWxsLCJyZXNldF90b2tlbiI6bnVsbCwicmVzZXRfdG9rZW5fZXhwaXJ5IjpudWxsfSwiaWF0IjoxNzQ0OTY0NTQwLCJleHAiOjE3NDQ5NjU0NDB9.HCooJYquJS7PpC_HtHoFm2OK199xa5IJxpAZBdMtuJM",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"firstName\": \"Richard2\",\n    \"lastName\": \"van 't Hof\",\n    \"email\": \"hello3@therichard.space\",\n    \"username\": \"{{$randomUserName}}/\",\n    \"password\": \"{{$randomPassword}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{host}}/users",
+              "host": [
+                "{{host}}"
+              ],
+              "path": [
+                "users"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Delete user",
+          "request": {
+            "method": "GET",
+            "header": []
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Message",
+      "item": [
+        {
+          "name": "add",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"name\": \"Rob\",\n    \"email\": \"Rob@therichard.space\",\n    \"content\": [{\"type\":\"image\",\"src\":\"sample2.jpg\"},{\"type\":\"text\",\"content\":\"Richard will be reachable once more...\"}],\n    \"ownerId\": 1\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{host}}/message",
+              "host": [
+                "{{host}}"
+              ],
+              "path": [
+                "message"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "fetch",
+          "protocolProfileBehavior": {
+            "disableBodyPruning": true
+          },
+          "request": {
+            "method": "GET",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"status\":\"pending\",\n    \"paginate\": {\n        \"limit\": 5,\n        \"page\": 1\n    }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{host}}/message",
+              "host": [
+                "{{host}}"
+              ],
+              "path": [
+                "message"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Confirm receipt",
+          "request": {
+            "method": "GET",
+            "header": []
+          },
+          "response": []
+        },
+        {
+          "name": "modify",
+          "request": {
+            "method": "PATCH",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"postId\": 7,\n    \"printedAt\": \"2025-04-20 12:16:16.537\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{host}}/message",
+              "host": [
+                "{{host}}"
+              ],
+              "path": [
+                "message"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "delete",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyRGF0YSI6eyJpZCI6MiwidXNlcm5hbWUiOiJyaWNoYXJkIn0sImlhdCI6MTc0NTA1NDY0NiwiZXhwIjoxNzQ1MDU1NTQ2fQ.rYfprc6-2Txfyu-sumjRbgpqsLkRSUzhR0Tm_ke4Dw0",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{host}}/message",
+              "host": [
+                "{{host}}"
+              ],
+              "path": [
+                "message"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Patch status + query new messages",
+          "request": {
+            "method": "GET",
+            "header": []
+          },
+          "response": []
+        },
+        {
+          "name": "New messages available?",
+          "request": {
+            "method": "GET",
+            "header": []
+          },
+          "response": []
+        },
+        {
+          "name": "upload images",
+          "request": {
+            "method": "GET",
+            "header": []
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Endpoints",
+      "item": [
+        {
+          "name": "Add",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{host}}/endpoint",
+              "host": [
+                "{{host}}"
+              ],
+              "path": [
+                "endpoint"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Delete",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{host}}/endpoimt",
+              "host": [
+                "{{host}}"
+              ],
+              "path": [
+                "endpoimt"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "fetch",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{host}}/endpoint",
+              "host": [
+                "{{host}}"
+              ],
+              "path": [
+                "endpoint"
+              ]
+            }
+          },
+          "response": []
+        }
+      ],
+      "description": "Manage endpoints like printers"
+    }
+  ],
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      {
+        "key": "token",
+        "value": "{{supabase_service_role_api_key_0y7o}}",
+        "type": "string"
+      }
+    ]
+  },
+  "event": [
+    {
+      "listen": "prerequest",
+      "script": {
+        "type": "text/javascript",
+        "packages": {},
+        "requests": {},
+        "exec": [
+          ""
+        ]
+      }
+    },
+    {
+      "listen": "test",
+      "script": {
+        "type": "text/javascript",
+        "packages": {},
+        "requests": {},
+        "exec": [
+          ""
+        ]
+      }
+    }
+  ],
+  "variable": [
+    {
+      "key": "host",
+      "value": "localhost:9000"
+    },
+    {
+      "key": "username",
+      "value": "richard"
+    },
+    {
+      "key": "password",
+      "value": "12346"
+    },
+    {
+      "key": "Auth_token",
+      "secret": true
+    },
+    {
+      "key": "json_web_token_15y6",
+      "secret": true
+    },
+    {
+      "key": "auth_secret_03ta",
+      "secret": true
+    },
+    {
+      "key": "supabase_service_role_api_key_0y7o",
+      "secret": true
+    }
+  ]
 }

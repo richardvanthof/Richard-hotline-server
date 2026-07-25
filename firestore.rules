@@ -1,7 +1,0 @@
-service cloud.firestore {
-  match /databases/{database}/documents {
-    match /messages/{message} {
-     allow read, write: if request.resource.data.auth == 'ec249a6e9d0926094e748d407dba3843ac9fc0c0'
-    }
-  }
-}
