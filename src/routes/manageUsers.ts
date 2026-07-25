@@ -265,7 +265,7 @@ userRoutes.post('/forgot-password', validate(forgotPasswordSchema), async (req: 
     }
 });
 
-userRoutes.get('/reset-password', validate(resetPasswordSchema), (req: Request, res: Response) => {
+userRoutes.get('/reset-password', (req: Request, res: Response) => {
     res.sendFile(path.join(__dirname, '../../public/reset-password.html'));
 });
 
@@ -273,8 +273,10 @@ userRoutes.post('/reset-password', validate(resetPasswordSchema), async (req: Re
     try {
         const { token, newPassword } = req.body;
         await resetPassword(token, newPassword);
+        
         sendError(res, 'PASSWORD_RESET_SUCCESSFUL');
     } catch (err) {
+        
         if (err instanceof Error) {
             if(err.message === 'INVALID_OR_EXPIRED_TOKEN') {
                 sendError(res, 'INVALID_OR_EXPIRED_TOKEN');
