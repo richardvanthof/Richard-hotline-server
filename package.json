@@ -2,7 +2,7 @@
   "name": "Richard-hotline-server",
   "version": "1.0.0",
   "description": "Richard Hotline API",
-  "main": "dist/index.js",
+  "main": "dist/api/index.js",
   "author": "Richard van 't Hof",
   "license": "MIT",
   "private": true,
