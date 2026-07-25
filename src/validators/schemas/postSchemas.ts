@@ -29,7 +29,7 @@ export const CreateMessageSchema = z.object({
 
     email: emailSchema,
 
-    ownerId: z.string().uuid().optional(),
+    ownerId: z.string(),
 
     content: MessageContentSchema,
 }).strict();

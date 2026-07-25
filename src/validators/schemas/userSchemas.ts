@@ -35,7 +35,7 @@ export const resetPasswordSchema = z.object({
 });
 
 export const deleteUserSchema = z.object({
-    userId: z.string().uuid('Invalid user id').optional(), // adjust to z.number() if your ids are ints
+    userId: z.number('Invalid user id').optional(), // adjust to z.number() if your ids are ints
 });
 
 // Refresh token comes from the Authorization header, not the body —
