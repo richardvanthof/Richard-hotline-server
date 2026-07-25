@@ -17,7 +17,7 @@ import {
     forgotPasswordSchema,
     resetPasswordSchema,
     deleteUserSchema,
-    refreshHeaderSchema
+    refreshAccessSchema
 } from '../validators/schemas/userSchemas';
 
 import { passwordResetTemplate } from '../emailTemplates/passwordResetTemplate';
@@ -147,16 +147,16 @@ userRoutes.post('/login', validate(loginSchema), async (req: Request, res: Respo
     }
 });
   
-userRoutes.post('/refresh', validate(refreshHeaderSchema), async (req: Request, res: Response):Promise<void> => {
+userRoutes.post('/refresh', validate(refreshAccessSchema), async (req: Request, res: Response):Promise<void> => {
 try {
-    const authHeaders = req.headers['authorization'] as string;
-    const refreshToken:string = authHeaders && authHeaders.split(' ')[1];
+    const refreshToken:string = req.body.refreshToken;
     if(!refreshToken) {
         sendError(res, 'REFRESH_TOKEN_NOT_FOUND');
     } else if(!process.env.REFRESH_TOKEN_SECRET) {
         sendError(res, 'REFRESH_TOKEN_SECRET_UNDEFINED');
     } else {
         const data = jwt.verify(refreshToken, process.env.REFRESH_TOKEN_SECRET) as jwt.JwtPayload;
+        console.log(data);
         const {id, username, role} = data;
         const accessToken = await generateToken({id, username, role}, process.env.ACCESS_TOKEN_SECRET || '', process.env.ACCESS_TOKEN_EXPIRATION);
         res.status(200).send({
@@ -167,13 +167,16 @@ try {
         });
     };
 } catch(err) {
-    if (err instanceof Error) {
-    if(err.message === 'jwt expired' || err.message === 'invalid token') {
-        sendError(res, 'INVALID_CREDENTIALS');
-    } else {
-        sendError(res, 'INTERNAL_ERROR');
-    }
-    }
+        if (err instanceof Error) {
+            if (err.message === 'jwt expired' || err.message === 'invalid token' || err.message.includes('jwt malformed')) {
+                console.error(err);
+                sendError(res, 'INVALID_OR_EXPIRED_TOKEN');
+            } else {
+                sendError(res, 'INTERNAL_ERROR');
+            }
+        } else {
+            sendError(res, 'INTERNAL_ERROR');
+        }
 }
 }); 
 
@@ -284,7 +287,7 @@ userRoutes.post('/reset-password', validate(resetPasswordSchema), async (req: Re
     }
 });
 
-userRoutes.delete('/user', authenticateToken, async (req: Request, res: Response): Promise<void> => {
+userRoutes.delete('/user', validate(deleteUserSchema), authenticateToken, async (req: Request, res: Response): Promise<void> => {
     try {
         const { id } = req.user;
         const { userId } = req.body;
