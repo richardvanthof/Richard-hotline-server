@@ -1,18 +1,12 @@
 // pgListener.ts
 import { Client } from "pg";
 import { messageSubscribers, sendSseEvent } from "./sse";
-
+import config from "./config";
 let listenerClient: Client | null = null;
 let reconnecting = false;
 
 async function connect() {
-    const config = {
-        user: process.env.POSTGRES_USER,
-        host: process.env.POSTGRES_HOST ?? "localhost",
-        database: process.env.POSTGRES_DB,
-        password: process.env.POSTGRES_PASSWORD,
-        port: Number(process.env.POSTGRES_PORT ?? 5432),
-    };
+  
     const client = new Client(config);
 
     client.on("error", (err) => {
