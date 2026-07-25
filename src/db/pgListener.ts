@@ -7,7 +7,10 @@ let reconnecting = false;
 
 async function connect() {
   
-    const client = new Client(config);
+    const client = new Client({
+        ...config,
+        host: process.env.POSTGRES_HOST,
+    });
 
     client.on("error", (err) => {
         console.error("PG listener connection error:", err.message);

@@ -2,16 +2,13 @@ import { Pool, Client } from "pg";
 import dotenv from "dotenv";
 
 dotenv.config();
+import config from "./config";
 
-const config = {
-    user: process.env.POSTGRES_USER,
-    host: process.env.POSTGRES_HOST ?? "localhost",
-    database: process.env.POSTGRES_DB,
-    password: process.env.POSTGRES_PASSWORD,
-    port: Number(process.env.POSTGRES_PORT ?? 5432),
-};
 
-const pool = new Pool(config);
+const pool = new Pool({
+    ...config,
+    host: process.env.POSTGRES_HOST_POOLED || process.env.POSTGRES_HOST,
+});
 
 const listener = new Client(config);
 
