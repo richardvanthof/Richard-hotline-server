@@ -1,11 +1,13 @@
 import { Router, Request, Response } from "express";
 import { S3Client, PutObjectCommand } from "@aws-sdk/client-s3";
 import multer from "multer";
-import { authenticateToken } from "../authorization/authorization";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import { GetObjectCommand } from "@aws-sdk/client-s3";
 import { query } from "../db/db_connect";
 import sendError from "../errorHandling/errorHandler";
+import path from "path";
+import crypto from "crypto";
+import { handleUploadError } from "../errorHandling/errorHandler";
 
 const uploadRoutes = Router();
 
@@ -38,20 +40,17 @@ const R2_PUBLIC_DOMAIN = process.env.R2_PUBLIC_DOMAIN || "";
 // -----------------------------------------------------------------------------
 
 const storage = multer.memoryStorage();
-const maxFileSize = 500000; // 500kb
+const maxFileSize = process.env.MAX_UPLOAD_SIZE ? parseInt(process.env.MAX_UPLOAD_SIZE) : 100000; // 100kb
+const maxFiles = process.env.MAX_FILES_PER_UPLOAD ? parseInt(process.env.MAX_FILES_PER_UPLOAD) : 3; // 3 files
 export const upload = multer({
   storage,
   limits: {
     fileSize: maxFileSize, // 500kb per image
-    files: 3,
+    files: maxFiles, // max 2 images
   },
   fileFilter(req, file, cb) {
     if (!file.mimetype.startsWith("image/")) {
       cb(new Error("ONLY_IMAGES_ALLOWED"));
-      return;
-    }
-    if (file.size > maxFileSize) {
-      cb(new Error("FILE_TOO_LARGE"));
       return;
     }
     cb(null, true);
@@ -122,9 +121,13 @@ export async function uploadImages(
   }
 
   const uploadedUrls: string[] = [];
-
+  function safeObjectKey(userId: string, originalname: string): string {
+    const ext = path.extname(originalname).replace(/[^a-zA-Z0-9.]/g, '').slice(0, 10);
+    const randomId = crypto.randomBytes(8).toString('hex');
+    return `userdata/${userId}/message-assets/${Date.now()}-${randomId}${ext}`;
+  }
   for (const file of files) {
-    const objectKey = `userdata/${userId}/message-assets/${Date.now()}-${file.originalname}`;
+    const objectKey = safeObjectKey(userId, file.originalname);
 
     const uploadParams = {
       Bucket: R2_BUCKET_NAME,

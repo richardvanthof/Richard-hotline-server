@@ -1,4 +1,5 @@
-import { Response } from 'express';
+import { Response, NextFunction } from 'express';
+import { MulterError } from 'multer';
 
 type ErrorEntry = { status: number; message: string };
 
@@ -31,5 +32,32 @@ function sendError(res: Response, code: keyof typeof errors): void {
     const entry = errors[code] ?? errors.INTERNAL_ERROR;
     res.status(entry.status).send({ error: code, message: entry.message });
 }
+
+export function handleUploadError(err: unknown, req: Request, res: Response, next: NextFunction): void {
+  if (err instanceof MulterError) {
+    res.status(400).json({
+      code: 'VALIDATION_ERROR',
+      errors: [{ path: ['images'], message: multerMessages[err.code] ?? err.message }],
+    });
+    return;
+  }
+
+  if (err instanceof Error) {
+    // covers the fileFilter's ONLY_IMAGES_ALLOWED throw
+    res.status(400).json({
+      code: 'VALIDATION_ERROR',
+      errors: [{ path: ['images'], message: err.message }],
+    });
+    return;
+  }
+
+  next(err);
+}
+
+const multerMessages: Record<string, string> = {
+  LIMIT_FILE_SIZE: 'Each image must be under 500KB.',
+  LIMIT_FILE_COUNT: 'You can upload a maximum of 3 images.',
+  LIMIT_UNEXPECTED_FILE: 'Unexpected file field.',
+};
 
 export default sendError;

@@ -4,7 +4,6 @@ import { Request, Response, Router } from 'express';
 import query, {startNotificationListener} from '../db/db_connect';
 import sendMail from '../lib/send-mail';
 import { z } from 'zod';
-import {Client} from 'pg';
 import { messageSubscribers, sendSseEvent } from '../db/sse';
 import validate from '../validators/validationMiddleware';
 import { 
@@ -14,6 +13,7 @@ import {
     ConfirmReceiptSchema,
     GetMessagesSchema
 } from '../validators/schemas/postSchemas';
+
 const postRoutes = Router();
 
 const getNewMessagesCount = async (userId: string): Promise<number> => {
@@ -25,6 +25,18 @@ const getNewMessagesCount = async (userId: string): Promise<number> => {
     const result = await query(queryText, [userId]);
     return parseInt(result.rows[0]?.total || '0', 10);
 }
+
+postRoutes.get('/policies', (req: Request, res: Response) => {
+    const maxUploadSize = parseInt(process.env.MAX_UPLOAD_SIZE || '500000', 10);
+    const maxFilesPerUpload = parseInt(process.env.MAX_FILES_PER_UPLOAD || '3', 10);
+    const maxCharsInText = parseInt(process.env.MAX_CHARS_IN_TEXT || '1000', 10);
+
+    res.status(200).json({
+        maxUploadSize,
+        maxFilesPerUpload,
+        maxCharsInText
+    });
+});
 
 postRoutes.get(
     '/message', 
