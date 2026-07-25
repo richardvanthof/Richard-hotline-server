@@ -1,3 +1,5 @@
+import { Response } from 'express';
+
 type ErrorEntry = { status: number; message: string };
 
 const errors: Record<string, ErrorEntry> = {
@@ -19,7 +21,9 @@ const errors: Record<string, ErrorEntry> = {
     RESET_PASSWORD_EMAIL_SENT:      { status: 200, message: 'Password reset email sent successfully' },
     PSSWD_EMAIL_SERVICE_ERROR:      { status: 500, message: 'Error sending password reset email' },
     EMAIL_UNDEFINED:                { status: 400, message: 'Email is undefined' },
+    ONLY_IMAGES_ALLOWED:            { status: 400, message: 'Only image uploads are allowed' },
     PASSWORD_RESET_SUCCESSFUL:      { status: 200, message: 'Password reset successfully' },
+    FILES_UNDEFINED:                { status: 400, message: 'Files are undefined' },
 };
 
 // Sends the response AND returns, so callers can't forget either half

@@ -4,6 +4,8 @@ import multer from "multer";
 import { authenticateToken } from "../authorization/authorization";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import { GetObjectCommand } from "@aws-sdk/client-s3";
+import { query } from "../db/db_connect";
+import sendError from "../errorHandling/errorHandler";
 
 const uploadRoutes = Router();
 
@@ -36,19 +38,22 @@ const R2_PUBLIC_DOMAIN = process.env.R2_PUBLIC_DOMAIN || "";
 // -----------------------------------------------------------------------------
 
 const storage = multer.memoryStorage();
-
+const maxFileSize = 500000; // 500kb
 export const upload = multer({
   storage,
   limits: {
-    fileSize: 10 * 1024 * 1024, // 10MB per image
-    files: 10,
+    fileSize: maxFileSize, // 500kb per image
+    files: 3,
   },
   fileFilter(req, file, cb) {
     if (!file.mimetype.startsWith("image/")) {
-      cb(new Error("Only image uploads are allowed."));
+      cb(new Error("ONLY_IMAGES_ALLOWED"));
       return;
     }
-
+    if (file.size > maxFileSize) {
+      cb(new Error("FILE_TOO_LARGE"));
+      return;
+    }
     cb(null, true);
   },
 });
@@ -70,11 +75,17 @@ uploadRoutes.post(
   upload.array("images"),
   async (req: Request, res: Response): Promise<void> => {
     const uploadRequest = req as UploadRequest;
-    console.log("images", uploadRequest.body.images, "files", uploadRequest.files)
+    const files = uploadRequest.files;
     try {
+      const userId = uploadRequest.body.userId;
+      const recipientExists = await query('SELECT 1 FROM users WHERE id = $1', [userId]);
+      if (recipientExists.rowCount === 0) {
+        sendError(res, 'INVALID_RECIPIENT');
+        return;
+      }
       const images = await uploadImages(
-        uploadRequest.body.userId,
-        uploadRequest.files
+        userId,
+        files
       );
 
       console.log(images)
@@ -82,10 +93,12 @@ uploadRoutes.post(
       res.status(200).json(images);
     } catch (err) {
       console.error("R2 upload failed:", err);
-
-      res.status(500).json({
-        error: "Failed to upload images.",
-      });
+      if(err instanceof Error) {
+        sendError(res, err.message);
+        return;
+      };
+      sendError(res, 'INTERNAL_ERROR');
+      return;
     }
   }
 );
@@ -99,11 +112,13 @@ export async function uploadImages(
   files: Express.Multer.File[]
 ): Promise<UploadedImages> {
   if (!userId) {
-    throw new Error("Missing user id.");
+    throw new Error("USER_ID_UNDEFINED");
   }
 
+  
+
   if (!files || files.length === 0) {
-    throw new Error("No files uploaded.");
+    throw new Error("FILES_UNDEFINED");
   }
 
   const uploadedUrls: string[] = [];
