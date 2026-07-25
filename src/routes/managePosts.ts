@@ -14,6 +14,7 @@ import {
     GetMessagesSchema
 } from '../validators/schemas/postSchemas';
 
+
 const postRoutes = Router();
 
 const getNewMessagesCount = async (userId: string): Promise<number> => {

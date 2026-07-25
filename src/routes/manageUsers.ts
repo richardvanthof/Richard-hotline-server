@@ -20,6 +20,7 @@ import {
     refreshHeaderSchema
 } from '../validators/schemas/userSchemas';
 
+import { passwordResetTemplate } from '../emailTemplates/passwordResetTemplate';
 
 import {UserData} from '../authentication/authenticate';
 
@@ -236,14 +237,7 @@ userRoutes.post('/forgot-password', validate(forgotPasswordSchema), async (req: 
         console.log({resetToken})
         const subject = 'Password Reset';
         const url = `http://${process.env.DOMAIN}/reset-password?token=${resetToken}`;
-        const message = `
-            <h1>Reset your password</h1>
-            <p>Click the link to reset your password:</p>
-            <a href="${url}">Reset Password</a>
-
-            <p style="font-size: 0.9rem">Copy the following url into your browser if you can't click the link:</p>
-            <a style="font-size: 0.9rem" href="${url}">${url}</a>
-        `
+        const message = passwordResetTemplate(url)
         const sent = await sendMail({to: email, subject, html: message});
         if(sent) {
             sendError(res, 'RESET_PASSWORD_EMAIL_SENT');
