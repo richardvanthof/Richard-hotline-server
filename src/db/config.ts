@@ -3,9 +3,7 @@ const config = {
     database: process.env.POSTGRES_DB,
     password: process.env.POSTGRES_PASSWORD,
     port: Number(process.env.POSTGRES_PORT || 5432),
-    ssl: {
-        rejectUnauthorized: process.env.POSTGRES_ENABLE_SSL === "true" || true,
-    }
+    ssl: process.env.POSTGRES_ENABLE_SSL === "true"
 };
 
 export default config;

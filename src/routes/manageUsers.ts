@@ -284,7 +284,7 @@ userRoutes.post('/reset-password', validate(resetPasswordSchema), async (req: Re
     }
 });
 
-userRoutes.delete('/user', validate(deleteUserSchema), authenticateToken, async (req: Request, res: Response): Promise<void> => {
+userRoutes.delete('/user', authenticateToken, async (req: Request, res: Response): Promise<void> => {
     try {
         const { id } = req.user;
         const { userId } = req.body;
