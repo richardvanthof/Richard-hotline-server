@@ -42,7 +42,11 @@ app.set('trust proxy', 1)
 // Add middleware for getting request body
 app.use(express.json());
 app.use(express.urlencoded({extended: true}));
-app.use(cors())
+app.use(cors({
+  origin: process.env.ALLOWED_ORIGINS?.split(','),
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
+}));
 app.use(morgan('dev'));
 
 // Serve static files from the public directory
