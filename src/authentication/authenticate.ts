@@ -9,7 +9,7 @@ export type UserData = {
     email: string,
     username: string,
     password: string,
-    id?: number | string,
+    id?: string,
     role?: string
 }
 

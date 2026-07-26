@@ -42,8 +42,10 @@ app.set('trust proxy', 1)
 // Add middleware for getting request body
 app.use(express.json());
 app.use(express.urlencoded({extended: true}));
+const allowedOrigins = process.env.ALLOWED_ORIGINS?.split(',').map(origin => origin.trim());
+console.debug('Allowed Origins:', allowedOrigins);
 app.use(cors({
-  origin: process.env.ALLOWED_ORIGINS?.split(','),
+  origin: allowedOrigins,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'],
   allowedHeaders: ['Content-Type', 'Authorization'],
 }));

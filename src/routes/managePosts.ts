@@ -13,7 +13,7 @@ import {
     ConfirmReceiptSchema,
     GetMessagesSchema
 } from '../validators/schemas/postSchemas';
-
+import sendError from '../errorHandling/errorHandler';
 
 const postRoutes = Router();
 
@@ -142,6 +142,10 @@ const TextBlockSchema = z.object({
     content: z.string()
 });
 
+function isPgError(err: unknown): err is { code: string; constraint?: string } {
+    return typeof err === 'object' && err !== null && 'code' in err;
+}
+
 postRoutes.post('/message', 
     validate(CreateMessageSchema), async (req: Request, res: Response) => {
     try {
@@ -149,20 +153,23 @@ postRoutes.post('/message',
         console.log(content)
         const command = `
             INSERT INTO posts (name, email, content, owner_id)
-            VALUES ($1, $2, $3, $4)
-            RETURNING *;
-        `;
-        const resp = await query(command, [name, email, JSON.stringify(content), ownerId])
-        console.log(resp.rows[0]);
-       
-        res.status(200).send({
-            code: 'POST_CREATED',
+            VALUES ($1, $2, $3, $4::uuid)
+            `;
+
+        const resp = await query(command, [name, email, JSON.stringify(content), ownerId]);
+        res.status(201).send({
+            code: 'MESSAGE_CREATED',
             message: 'Message created successfully.',
-            data: resp.rows
-        })
+            data: resp.rows[0]
+        });
+        
 
     } catch (err) {
         console.error(err);
+        // Postgres foreign key violation: ownerId doesn't match any existing user
+        if (isPgError(err) && err.code === '23503' && err.constraint === 'posts_owner_id_fkey') {
+        return res.status(400).send(sendError(res, 'USER_NOT_FOUND'));
+    }
         if (err instanceof Error) {
             res.status(500).send(err.message)
         } else {

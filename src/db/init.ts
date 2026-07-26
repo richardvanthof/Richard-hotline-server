@@ -5,7 +5,7 @@ const initDB = async () => {
     const statements = [
         `
         CREATE TABLE IF NOT EXISTS users (
-            id SERIAL PRIMARY KEY,
+            id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
             first_name VARCHAR(50) NOT NULL,
             last_name VARCHAR(50) NOT NULL,
             email VARCHAR(100) UNIQUE NOT NULL,
@@ -23,8 +23,8 @@ const initDB = async () => {
         `,
         `
         CREATE TABLE IF NOT EXISTS posts (
-            post_id SERIAL UNIQUE PRIMARY KEY,
-            owner_id INTEGER REFERENCES users(id),
+            post_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+            owner_id UUID REFERENCES users(id),
             content JSONB NOT NULL,
             email VARCHAR(75) NOT NULL,
             name VARCHAR(75) NOT NULL,
@@ -35,9 +35,8 @@ const initDB = async () => {
         `,
         `
         CREATE TABLE IF NOT EXISTS endpoints (
-            endpoint_id SERIAL UNIQUE PRIMARY KEY,
-            uuid VARCHAR(75) UNIQUE NOT NULL,
-            owner_id INTEGER REFERENCES users(id),
+            endpoint_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+            owner_id UUID REFERENCES users(id),
             type VARCHAR(50) NOT NULL,
             status VARCHAR(50) NOT NULL,
             created_at TIMESTAMP DEFAULT NOW(),
@@ -53,7 +52,7 @@ const initDB = async () => {
         LANGUAGE plpgsql
         AS $$
         DECLARE
-            target_user_id bigint;
+            target_user_id uuid;
             unread_count integer;
         BEGIN
             IF TG_OP = 'INSERT' THEN

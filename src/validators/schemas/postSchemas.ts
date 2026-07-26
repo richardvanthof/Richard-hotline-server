@@ -17,7 +17,7 @@ const ImageBlockSchema = z.object({
 
 const TextBlockSchema = z.object({
     type: z.literal("text"),
-    content: sanitizeString(1, 5000),
+    content: sanitizeString(1, process.env.MAX_CHARS_IN_TEXT ? parseInt(process.env.MAX_CHARS_IN_TEXT) : 200),
 });
 
 export const MessageContentSchema = z.array(
@@ -29,7 +29,7 @@ export const CreateMessageSchema = z.object({
 
     email: emailSchema,
 
-    ownerId: z.string(),
+    ownerId: z.string().uuid(),
 
     content: MessageContentSchema,
 }).strict();
