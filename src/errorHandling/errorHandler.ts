@@ -4,7 +4,7 @@ import { MulterError } from 'multer';
 type ErrorEntry = { status: number; message: string };
 
 const errors: Record<string, ErrorEntry> = {
-    USER_NOT_FOUND:                { status: 404, message: 'User not found' },
+    USER_NOT_FOUND:                 { status: 404, message: 'User not found' },
     INVALID_PASSWORD:               { status: 401, message: 'Invalid password' },
     INVALID_CREDENTIALS:            { status: 401, message: 'Invalid username or password' },
     REFRESH_TOKEN_NOT_FOUND:        { status: 401, message: 'Refresh token not found' },
@@ -30,7 +30,7 @@ const errors: Record<string, ErrorEntry> = {
 // Sends the response AND returns, so callers can't forget either half
 function sendError(res: Response, code: keyof typeof errors): void {
     const entry = errors[code] ?? errors.INTERNAL_ERROR;
-    res.status(entry.status).send({ error: code, message: entry.message });
+    res.status(entry.status).send({ code: code, message: entry.message });
 }
 
 export function handleUploadError(err: unknown, req: Request, res: Response, next: NextFunction): void {

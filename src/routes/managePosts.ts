@@ -167,7 +167,7 @@ postRoutes.post('/message',
     } catch (err) {
         console.error(err);
         // Postgres foreign key violation: ownerId doesn't match any existing user
-        if (isPgError(err) && err.code === '23503' && err.constraint === 'posts_owner_id_fkey') {
+        if (isPgError(err) && (err.code === '23503' || err.code === '22P02')) {
         return res.status(400).send(sendError(res, 'USER_NOT_FOUND'));
     }
         if (err instanceof Error) {
@@ -325,7 +325,8 @@ postRoutes.patch('/confirm-receipt',
         );
 
         res.status(200).send({
-            results,
+            message: 'Receipt confirmed for the following message IDs: ' + results.map(r => r.postId).join(', '),
+            timestamp: results[0].resp?.printed_at || new Date().toISOString(),
         });
     } catch (err) {
         if (err instanceof Error) {

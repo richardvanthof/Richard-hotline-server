@@ -155,6 +155,11 @@ try {
     } else if(!process.env.REFRESH_TOKEN_SECRET) {
         sendError(res, 'REFRESH_TOKEN_SECRET_UNDEFINED');
     } else {
+        const isPrescentInDB = await query('SELECT refresh_tokens FROM users WHERE $1 = ANY(refresh_tokens)', [refreshToken]);
+        if(isPrescentInDB.rows.length === 0) {
+            sendError(res, 'INVALID_OR_EXPIRED_TOKEN');
+            return;
+        }
         const data = jwt.verify(refreshToken, process.env.REFRESH_TOKEN_SECRET) as jwt.JwtPayload;
         console.log(data);
         const {id, username, role} = data;
@@ -209,7 +214,7 @@ userRoutes.delete('/logout', validate(logoutSchema), authenticateToken, async (r
     }
 });
 
-userRoutes.delete('/logout-all', validate(logoutSchema), authenticateToken, async (req: Request, res: Response):Promise<void> => {
+userRoutes.delete('/logout-all', authenticateToken, async (req: Request, res: Response):Promise<void> => {
     try {
         const {id} = req.user;
         

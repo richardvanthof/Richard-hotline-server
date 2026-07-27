@@ -35,7 +35,7 @@ export const CreateMessageSchema = z.object({
 }).strict();
 
 export const UpdateMessageSchema = z.object({
-    postId: z.coerce.number().int().positive(),
+    postId: z.string().uuid(),
 
     name: sanitizeString(1, 100).optional(),
 
@@ -58,13 +58,13 @@ export const UpdateMessageSchema = z.object({
 
 
 export const DeleteMessageSchema = z.object({
-    postId: z.coerce.number().int().positive(),
+    postId: z.string().uuid(),
 });
 
 export const ConfirmReceiptSchema = z.object({
     messages: z.array(
         z.object({
-            postId: z.coerce.number().int().positive(),
+            postId: z.string().uuid(),
             email: emailSchema,
         })
     ).min(1),
